@@ -71,6 +71,10 @@ h3 {
   letter-spacing: -0.01em;
 }
 
+.site-nav {
+  display: flex;
+  gap: 1.25rem;
+}
 .site-nav a {
   color: var(--muted);
   text-decoration: none;
@@ -161,6 +165,31 @@ main {
 .is-soon {
   opacity: 0.55;
   cursor: default;
+}
+
+/* ---- pain points ---- */
+.pains {
+  margin: 3.5rem 0 1rem;
+  max-width: 46rem;
+}
+.pains h2 {
+  font-size: clamp(1.8rem, 4vw, 2.4rem);
+  margin: 0 0 0.5rem;
+}
+.pain {
+  border-top: 1px solid var(--line);
+  padding: 1.4rem 0;
+}
+.pain:first-of-type {
+  border-top: none;
+}
+.pain h3 {
+  margin: 0 0 0.45rem;
+  font-size: 1.25rem;
+}
+.pain p {
+  margin: 0;
+  color: #4a4351;
 }
 
 /* ---- features ---- */

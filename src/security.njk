@@ -1,0 +1,111 @@
+---
+layout: base.njk
+title: How the security model works
+description: Eleven Messenger's end-to-end encryption, explained honestly — what the server can and can't see, and the trade-offs we've made.
+permalink: /security/
+---
+
+<section class="prose">
+  <h1>How the security model works</h1>
+  <p class="updated">Written to be checkable, not impressive</p>
+
+  <p>
+    The design goal is simple to state: <strong>if the server is ever
+    compromised, the attacker gets nothing worth having.</strong> Everything
+    below follows from that one rule.
+  </p>
+
+  <h2>Your device holds the keys</h2>
+  <p>
+    When you join a chat, your device generates a keypair (ECDH P-256). The
+    public half goes on the chat's member list; the private half never leaves
+    your device. There is no password to steal because there is no password —
+    your device <em>is</em> your identity.
+  </p>
+
+  <h2>Every chat has its own key</h2>
+  <p>
+    Each conversation — a group or a DM — gets its own AES-256 key. That key is
+    "wrapped" (encrypted) separately to every member's public key, and the
+    server stores only the wrapped copies, which it cannot open. To read a
+    chat, you must be a member of it; membership <em>is</em> the boundary, and
+    it's enforced by cryptography, not by a server policy.
+  </p>
+  <p>
+    Your device encrypts every message — text, attachments, file names, even
+    the sender's name inside the message — before anything is sent. The server
+    stores and relays opaque ciphertext. Push notifications arrive encrypted
+    too, and are decrypted on your device.
+  </p>
+
+  <h2>Invites don't leak</h2>
+  <p>
+    An invite link carries a one-time secret after the <code>#</code> in the
+    URL. Browsers never send that fragment to any server — it exists to
+    bootstrap your keys on your device, then it's spent. The admin's own
+    credential only manages the member list; it can't decrypt anything.
+  </p>
+
+  <h2>What the server necessarily sees</h2>
+  <p>
+    To deliver messages at all, the server has to know some things. We'd rather
+    tell you exactly what than pretend otherwise:
+  </p>
+  <ul>
+    <li>
+      <strong>Who shares a chat with whom.</strong> It routes messages to
+      members, so it knows each chat's membership.
+    </li>
+    <li>
+      <strong>Members' screen names.</strong> The member list stores the
+      display name each person chose.
+    </li>
+    <li>
+      <strong>Posted links, if previews are on.</strong> The server fetches a
+      URL you post once, to build the preview card. It sees that URL — never
+      the message around it. This is the one deliberate exception, and it can
+      be turned off.
+    </li>
+  </ul>
+  <p>
+    So a stolen copy of the database reveals who talks to whom, and by what
+    name — but not one word of what anyone said.
+  </p>
+
+  <h2>The honest limits</h2>
+  <p>
+    Every security model has edges. Here are ours:
+  </p>
+  <ul>
+    <li>
+      <strong>Removing someone doesn't un-share the past.</strong> A removed
+      member stops receiving new messages, but a key they already held isn't
+      clawed back.
+    </li>
+    <li>
+      <strong>Lost device, lost history.</strong> If you lose your device with
+      no backup or "add a device" link, your keys are gone — and so is the
+      history only you could read. We can't recover it, because we never had
+      it.
+    </li>
+    <li>
+      <strong>Key hand-out currently trusts the server.</strong> Public keys
+      are distributed by the server and aren't yet verified out of band. A
+      stolen database can't exploit that — but an actively malicious server
+      could substitute a key to intercept <em>new</em> conversations.
+      Out-of-band verification is planned to close this.
+    </li>
+  </ul>
+
+  <h2>Check our work</h2>
+  <p>
+    All of this is implemented in the open — the encryption runs in plain,
+    readable code on your device, not behind an API. If we've claimed something
+    here that the code doesn't do, we want to know about it:
+    <a href="mailto:security@elevenmessenger.com">security@elevenmessenger.com</a>.
+  </p>
+
+  <p class="fine">
+    For what data is handled and kept, see <a href="/privacy/">Privacy</a>.
+  </p>
+</section>
