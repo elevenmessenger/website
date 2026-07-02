@@ -1,0 +1,98 @@
+---
+layout: base.njk
+title: Privacy
+description: How Eleven Messenger handles your data — end-to-end encrypted, no analytics, no tracking.
+permalink: /privacy/
+---
+
+<section class="prose">
+  <h1>Privacy</h1>
+  <p class="updated">Last updated 2 July 2026</p>
+
+  <p>
+    Eleven Messenger is built so that your conversations belong to you and the
+    people you're talking to — not to us and not to whoever runs the server.
+    Here's exactly what that means in practice.
+  </p>
+
+  <h2>What only you and your recipients can read</h2>
+  <p>
+    Your device encrypts each message before it's sent and decrypts it on
+    arrival. The server stores and relays only ciphertext it has no way to open.
+    End-to-end encrypted, and never visible to the server, are:
+  </p>
+  <ul>
+    <li>the text of every message;</li>
+    <li>attachments, including their file names;</li>
+    <li>the sender's name as carried inside each message;</li>
+    <li>group names and photos.</li>
+  </ul>
+
+  <h2>What the server necessarily sees</h2>
+  <p>
+    To deliver messages, the server has to know some things — but never their
+    contents. It can see:
+  </p>
+  <ul>
+    <li>
+      <strong>Who shares a chat with whom.</strong> The server routes messages
+      to a chat's members, so it knows the membership of each chat.
+    </li>
+    <li>
+      <strong>Members' screen names.</strong> The roster stores the display name
+      each person chose, so people can recognise each other.
+    </li>
+  </ul>
+  <p>
+    It never sees your messages, your private key, or the keys that decrypt a
+    chat — those exist only on your devices. So a stolen copy of the database
+    reveals who talks to whom and by what name, but not a word of what was said.
+  </p>
+
+  <h2>What we don't do</h2>
+  <ul>
+    <li>No analytics and no tracking — first-party or third-party.</li>
+    <li>No advertising, and no selling or sharing of your data.</li>
+    <li>No accounts, emails, or phone numbers. You join with a secret link.</li>
+  </ul>
+
+  <h2>Link previews</h2>
+  <p>
+    If you post a web link, the server fetches that page once to build a preview
+    card (title, description, thumbnail). In that one moment it sees the URL you
+    posted — never the rest of your message. This is the single exception to the
+    rule above, and previews can be turned off.
+  </p>
+
+  <h2>Notifications</h2>
+  <p>
+    Push notifications are delivered as ciphertext and decrypted on your own
+    device, so the notification service (and we) can't read them either.
+  </p>
+
+  <h2>Keeping and losing data</h2>
+  <p>
+    Messages live on the server only as ciphertext, and each chat is a
+    self-contained instance. If you lose your device with no backup or
+    "add a device" link, the keys — and any history only you could read — are
+    gone, because we never had them.
+  </p>
+
+  <h2>Children</h2>
+  <p>
+    Eleven Messenger is made for families to use together. It collects no
+    personal information beyond the display name a member chooses, and there are
+    no ads, feeds, or contact from strangers.
+  </p>
+
+  <h2>Contact</h2>
+  <p>
+    Questions about privacy? Email
+    <a href="mailto:privacy@elevenmessenger.com">privacy@elevenmessenger.com</a>.
+  </p>
+
+  <p class="fine">
+    This page describes how the app works today and is written to be honest, not
+    to be legal advice.
+  </p>
+</section>
