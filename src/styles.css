@@ -63,12 +63,20 @@ h3 {
 }
 
 .brand {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
   font-family: var(--display);
   font-weight: 700;
   font-size: 1.15rem;
   color: var(--ink);
   text-decoration: none;
   letter-spacing: -0.01em;
+}
+.brand-mark {
+  width: 28px;
+  height: 28px;
+  border-radius: 7px;
 }
 
 .site-nav {
