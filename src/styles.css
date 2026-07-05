@@ -285,6 +285,9 @@ main {
   color: var(--muted);
   flex: 1;
 }
+.get .fine {
+  margin-top: 1.25rem;
+}
 
 /* ---- prose (privacy) ---- */
 .prose {
