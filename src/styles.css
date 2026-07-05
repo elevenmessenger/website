@@ -200,26 +200,57 @@ main {
   color: #4a4351;
 }
 
-/* ---- features ---- */
-.features {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(15rem, 1fr));
-  gap: 1rem;
-  margin: 2rem 0 1rem;
+/* ---- attributes ("Eleven is…") ---- */
+.attrs {
+  margin: 3.5rem 0 1rem;
+  max-width: 52rem;
 }
-.feature {
-  background: var(--surface);
-  border: 1px solid var(--line);
-  border-radius: var(--radius);
-  padding: 1.5rem;
-}
-.feature h3 {
+.attrs h2 {
+  font-size: clamp(1.8rem, 4vw, 2.4rem);
   margin: 0 0 0.5rem;
-  font-size: 1.2rem;
 }
-.feature p {
+.attr {
+  display: grid;
+  grid-template-columns: minmax(0, 12rem) 1fr;
+  gap: 0.4rem 2.5rem;
+  border-top: 1px solid var(--line);
+  padding: 1.5rem 0;
+}
+.attr h3 {
   margin: 0;
+  font-size: 1.35rem;
+}
+.attr-body p {
+  margin: 0 0 0.75rem;
   color: #4a4351;
+}
+.attr-body p:last-child {
+  margin-bottom: 0;
+}
+@media (max-width: 38rem) {
+  .attr {
+    grid-template-columns: 1fr;
+    gap: 0.4rem;
+  }
+}
+
+/* ---- creed (closing statement) ---- */
+.creed {
+  margin: 4rem auto 1rem;
+  max-width: 44rem;
+  text-align: center;
+}
+.creed p {
+  margin: 0;
+  font-family: var(--display);
+  font-weight: 600;
+  font-size: clamp(1.5rem, 3.6vw, 2.15rem);
+  line-height: 1.2;
+  letter-spacing: -0.01em;
+  color: var(--ink);
+}
+.creed-lead {
+  color: var(--accent-deep);
 }
 
 /* ---- get section ---- */
