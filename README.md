@@ -1,4 +1,4 @@
-# Eleven Messenger — website
+# 🤖 Eleven Messenger — website
 
 The marketing site for [Eleven Messenger](https://elevenmessenger.com), built
 with [Eleventy](https://www.11ty.dev/) and deployed to GitHub Pages.
