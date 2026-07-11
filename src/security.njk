@@ -14,6 +14,13 @@ permalink: /security/
     gets nothing worth having. Everything below follows from that.
   </p>
 
+  <ul class="stats" aria-label="Security facts">
+    <li><span class="stat-n">0</span><span class="stat-l">passwords stored — none exist anywhere in the system</span></li>
+    <li><span class="stat-n">0</span><span class="stat-l">phone numbers or emails collected</span></li>
+    <li><span class="stat-n">0</span><span class="stat-l">trackers or analytics, first- or third-party</span></li>
+    <li><span class="stat-n">0</span><span class="stat-l">messages our servers can read</span></li>
+  </ul>
+
   <h2>Your device holds the keys</h2>
   <p>
     When you join a chat, your device generates a keypair (ECDH P-256).
@@ -33,9 +40,10 @@ permalink: /security/
   <p>
     Your device encrypts every message before it's sent: text,
     attachments, file names, even the sender's name carried inside the
-    message. The server just stores and relays ciphertext it can't read.
-    Push notifications arrive encrypted too, and get decrypted on your
-    device.
+    message. Display names on the member list are sealed too, under a key
+    only members hold. The server just stores and relays ciphertext it
+    can't read. Push notifications arrive encrypted as well, and get
+    decrypted on your device.
   </p>
 
   <h2>Invites don't leak</h2>
@@ -54,11 +62,11 @@ permalink: /security/
   <ul>
     <li>
       <strong>Who's in a chat with whom.</strong> It routes messages to
-      members, so it knows each chat's membership.
+      members, so it knows each chat's membership — as keys, not names.
     </li>
     <li>
-      <strong>Screen names.</strong> The member list stores whatever
-      display name someone picked.
+      <strong>When, and how much.</strong> Message timing and sizes are
+      visible in transit, as they are for any messenger.
     </li>
     <li>
       <strong>A posted link, if previews are on.</strong> The server
@@ -68,9 +76,9 @@ permalink: /security/
     </li>
   </ul>
   <p>
-    So if the database were ever stolen, it would show who talks to whom
-    and under what name. It wouldn't show a single word anyone actually
-    said.
+    So if the database were ever stolen, it would show that keys talk to
+    keys. It wouldn't show a name, and it wouldn't show a single word
+    anyone actually said.
   </p>
 
   <h2>The honest limits</h2>
@@ -82,9 +90,10 @@ permalink: /security/
       held isn't clawed back.
     </li>
     <li>
-      <strong>Lose the device, lose the history.</strong> No backup, no
-      "add a device" link, and your keys are gone, along with any history
-      only you could read. We can't recover it. We never had it.
+      <strong>Your keys are yours to keep.</strong> Saving your sign-in
+      takes one tap, and then any device can let you back in. Skip it,
+      lose your only device, and your keys are gone along with any
+      history only you could read. We can't recover it. We never had it.
     </li>
     <li>
       <strong>Key hand-out currently trusts the server.</strong> Public
@@ -99,12 +108,15 @@ permalink: /security/
   <h2>Check our work</h2>
   <p>
     All of this runs in the open — plain, readable code on your device,
-    not hidden behind an API. If something here doesn't match what the
-    code actually does, tell us:
+    not hidden behind an API. It's audited by the latest AI models too,
+    including security review by Claude&nbsp;Fable. If something
+    here doesn't match what the code actually does, tell us:
     <a href="mailto:team@elevenmessenger.com">team@elevenmessenger.com</a>.
   </p>
 
   <p class="fine">
     For what data is handled and kept, see <a href="/privacy/">Privacy</a>.
+    For the full technical picture — ciphers, key wrapping, what a stolen
+    database yields — see <a href="/nerds/">the nerdy stuff</a>.
   </p>
 </section>

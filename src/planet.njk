@@ -1,0 +1,133 @@
+---
+layout: base.njk
+title: The planet
+htmlTitle: Planet · Eleven
+description: Eleven is roughly thirty times more carbon-friendly than the conventional way of running an app like this — about 2 grams of CO₂e per member per year. Here's the working.
+permalink: /planet/
+---
+
+<section class="prose">
+  <h1>Kinder to the planet.<br />By about thirty times.</h1>
+  <p class="updated">Measured, not vibes. Working shown below.</p>
+
+  <p>
+    Right now, the whole of Eleven — every space, every service, every
+    helper — draws less electricity than a nightlight. That's not because
+    it's small (though it is, for now). It's because of how it's built, and
+    the advantage holds as it grows.
+  </p>
+
+  <ul class="stats" aria-label="Headline carbon figures">
+    <li>
+      <span class="stat-n">~2 g</span>
+      <span class="stat-l">CO&#8322;e per member per year, at scale</span>
+    </li>
+    <li>
+      <span class="stat-n">~75 g</span>
+      <span class="stat-l">the same figure for a conventional app stack</span>
+    </li>
+    <li>
+      <span class="stat-n">~30&times;</span>
+      <span class="stat-l">the difference (estimates range 10&ndash;50&times;)</span>
+    </li>
+    <li>
+      <span class="stat-n">0.5 J</span>
+      <span class="stat-l">of server energy per message, versus 20&ndash;30 joules conventionally</span>
+    </li>
+  </ul>
+
+  <h2>Why it's so much lighter</h2>
+  <p>
+    No single trick — four ordinary decisions that multiply:
+  </p>
+  <ul>
+    <li>
+      <strong>It sleeps when you do.</strong> Most services keep every
+      customer's machinery running around the clock, sized for the busiest
+      moment ever expected. Each Eleven space simply goes to sleep when
+      nobody's chatting — costing nothing — and wakes in a blink when
+      someone speaks. Group chats are quiet most of the day; ours spend
+      that time off.
+    </li>
+    <li>
+      <strong>Small programs.</strong> An entire Eleven space — the app, its
+      database, everything — is one file that runs in about as much memory
+      as a handful of browser tabs. The industry standard for the same job
+      is measured in the hundreds of times more.
+    </li>
+    <li>
+      <strong>Privacy saves power.</strong> Because everything is encrypted
+      before it reaches us, our servers <em>can't</em> analyse, index, mine,
+      or &ldquo;enrich&rdquo; your conversations. Every feature a server
+      can't see is a feature it can't burn watts computing. Surveillance
+      isn't just rude — it's expensive.
+    </li>
+    <li>
+      <strong>Tiny apps.</strong> The iPhone app is smaller than a single
+      photo. Millions of people downloading hundred-megabyte updates every
+      fortnight is a real, ongoing energy cost — one we've designed away.
+    </li>
+  </ul>
+
+  <h2>What about the AI?</h2>
+  <p>
+    Eleven is <a href="/story/">built with AI</a>, and AI has a real energy
+    cost — we won't pretend otherwise. Our answer is the factory principle:
+    spend the factory's energy once, on making software that then sips
+    power for its whole life. What we refuse to do is both at once — burn
+    energy building software <em>and</em> burn it forever running bloated
+    results. The optional AI helpers inside Eleven are exactly that,
+    optional, and spaces that don't use them don't spend a joule on them.
+  </p>
+
+  <h2>The honest bits</h2>
+  <p>
+    These are careful estimates with error bars, not gospel:
+  </p>
+  <ul>
+    <li>
+      The absolute numbers could be off by 2&ndash;3&times; either way; the
+      <em>ratio</em> is sturdier, because most uncertainties hit both sides
+      equally and cancel.
+    </li>
+    <li>
+      Sleeping-when-idle is most of the trick. If every space chatted
+      around the clock, the advantage would shrink to &ldquo;only&rdquo;
+      5&ndash;10&times; — the part that comes from small, efficient
+      programs.
+    </li>
+    <li>
+      Where the electricity comes from matters enormously, for us and for
+      everyone else. Cleaner grids shrink everyone's numbers; ours stays
+      the smaller one.
+    </li>
+    <li>
+      The comparison gives the conventional stack the benefit of the doubt
+      — a plain chat service, no analytics or data pipelines. Against a
+      real surveillance-funded messenger, the gap widens.
+    </li>
+  </ul>
+
+  <h2>The method, briefly</h2>
+  <p>
+    The Eleven side starts from live measurements of our production fleet —
+    real memory, real load, on real hardware — projected to a million
+    spaces using the
+    <a href="https://www.cloudcarbonfootprint.org/docs/methodology/">Cloud
+    Carbon Footprint</a> methodology's published coefficients. The
+    conventional side is calibrated against the best public data on
+    well-run and typical fleets. The fuller, nerdier version lives on
+    <a href="/nerds/">the nerdy stuff</a>.
+  </p>
+
+  <blockquote>
+    ~2 g versus ~75 g of CO&#8322;e per member per year: the difference
+    between an infrastructure that sleeps when its members do, and one that
+    idles at peak provisioning forever.
+  </blockquote>
+
+  <p>
+    The thinking behind building software this way has its own manifesto:
+    <a href="https://11factor.org">The Eleven Factors</a>.
+  </p>
+</section>

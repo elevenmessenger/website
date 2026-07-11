@@ -1,26 +1,163 @@
 ---
 layout: base.njk
 title: Take your group chat to Eleven
-htmlTitle: Take your group chat to Eleven
-description: Eleven works just like the messengers you're used to — without the ads, the tracking, or the big-tech company in the middle. Just a secret invite link.
+htmlTitle: Eleven — take your group chat to Eleven
+description: Eleven is a new messenger for your family, friends, club, or small business — fast, private, and independent. No ads, no tracking, no phone numbers. Free to start.
+demo: true
 ---
 
 <section class="hero">
   <h1>Take your group chat<br />to Eleven.</h1>
   <p class="lede">
-    Eleven is a group-chat and messaging app, just like the ones you're used
-    to — groups, photos, reactions, replies, bots — without the tracking and
-    metrics of big tech.
+    Eleven is a new messenger for your family, your friends, your club, your
+    small business. It's fast, it's private, and it isn't run by big tech —
+    no ads, no tracking, no phone numbers. Everything you'd expect from a
+    great chat app, and nothing you wouldn't.
   </p>
   <div class="cta">
     <a class="btn btn-primary" href="#get">Get Eleven</a>
-    <a class="btn btn-ghost" href="/security/">How it stays private</a>
+    <a class="btn btn-ghost" href="https://home.elevenmessenger.com">Sign in</a>
   </div>
   <p class="fine">
-    Invite-only — there's no public sign-up. Someone already in a chat sends you
-    a link.
+    Create your own space in under a minute, or join with an invite link from
+    someone already inside.
   </p>
 </section>
+
+<!-- Not screenshots: the app itself in miniature, built from the product's own
+     stylesheet, so what you see here is exactly what ships. -->
+<figure class="collage" role="img"
+        aria-label="The same family conversation shown three ways: in a web browser using the warm Lit Room theme, in the Mac app, and in the iPhone app.">
+  <div class="demo theme-litroom frame-browser">
+    <div class="browser-bar">
+      <span class="tl tl-r"></span><span class="tl tl-y"></span><span class="tl tl-g"></span>
+      <span class="browser-url"><span class="lock">&#128274;</span>sunset-road.11ch.at</span>
+    </div>
+    <div class="browser-body">
+      <div class="d-head">
+        <span class="d-title">Grandma's 70th &#127881;</span>
+      </div>
+      <div class="d-feed">
+        <div class="d-msg them">
+          <div class="d-name">Dad</div>
+          <div class="d-bubble">Cake ordered &#127874;</div>
+        </div>
+        <div class="d-msg me">
+          <div class="d-bubble">Candles. ALL seventy.</div>
+          <div class="d-reactions"><span class="d-chip">&#128514; 3</span></div>
+        </div>
+      </div>
+      <div class="d-composer">
+        <span class="d-input">Message</span>
+        <span class="d-send">&#8593;</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="demo frame-mac">
+    <div class="mac-titlebar">
+      <span class="tl tl-r"></span><span class="tl tl-y"></span><span class="tl tl-g"></span>
+    </div>
+    <div class="mac-body">
+      <div class="d-side">
+        <div class="d-side-title">Sunset Road</div>
+        <div class="d-row active">
+          <span class="d-ava">E</span>
+          <span class="d-row-main">
+            <span class="d-row-name">Everyone</span>
+            <span class="d-row-prev">On it — leaving now</span>
+          </span>
+        </div>
+        <div class="d-row">
+          <span class="d-ava a2">G</span>
+          <span class="d-row-main">
+            <span class="d-row-name">Grandma's 70th &#127881;</span>
+            <span class="d-row-prev">Candles. ALL seventy.</span>
+          </span>
+          <span class="d-unread"></span>
+        </div>
+        <div class="d-row">
+          <span class="d-ava a3">H</span>
+          <span class="d-row-main">
+            <span class="d-row-name">Holiday plans</span>
+            <span class="d-row-prev">Ferry or fly?</span>
+          </span>
+        </div>
+        <div class="d-row">
+          <span class="d-ava a4">M</span>
+          <span class="d-row-main">
+            <span class="d-row-name">Maeve</span>
+            <span class="d-row-prev">see you at 6</span>
+          </span>
+        </div>
+      </div>
+      <div class="d-thread">
+        <div class="d-head">
+          <span class="d-title">Everyone</span>
+          <span class="d-sub"><span class="d-presence"></span>3 online</span>
+        </div>
+        <div class="d-feed">
+          <div class="d-msg them">
+            <div class="d-name">Maeve</div>
+            <div class="d-bubble">Who's collecting Rosie from practice?</div>
+          </div>
+          <div class="d-msg me">
+            <div class="d-bubble">On it — leaving now &#128663;</div>
+            <div class="d-reactions"><span class="d-chip">&#10084;&#65039; 1</span></div>
+          </div>
+          <div class="d-msg them">
+            <div class="d-name">Rosie</div>
+            <div class="d-bubble">can ada stay for dinner</div>
+          </div>
+          <div class="d-msg me cont">
+            <div class="d-bubble">Of course &#127837;</div>
+            <div class="d-reactions"><span class="d-chip mine">&#128077; 2</span></div>
+          </div>
+          <div class="d-typing" aria-hidden="true"><span class="dot"></span><span class="dot"></span><span class="dot"></span></div>
+        </div>
+        <div class="d-composer">
+          <span class="d-input">Message</span>
+          <span class="d-send">&#8593;</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="demo frame-phone">
+    <div class="phone-island"></div>
+    <div class="d-head">
+      <span class="d-title">Everyone</span>
+      <span class="d-sub"><span class="d-presence"></span>3 online</span>
+    </div>
+    <div class="d-feed">
+      <div class="d-msg them">
+        <div class="d-name">Maeve</div>
+        <div class="d-bubble">Who's collecting Rosie from practice?</div>
+      </div>
+      <div class="d-msg me">
+        <div class="d-bubble">On it — leaving now &#128663;</div>
+        <div class="d-reactions"><span class="d-chip">&#10084;&#65039; 1</span></div>
+      </div>
+      <div class="d-msg them">
+        <div class="d-name">Rosie</div>
+        <div class="d-bubble">can ada stay for dinner</div>
+      </div>
+      <div class="d-msg me cont">
+        <div class="d-bubble">Of course &#127837;</div>
+        <div class="d-reactions"><span class="d-chip mine">&#128077; 2</span></div>
+      </div>
+    </div>
+    <div class="d-composer">
+      <span class="d-input">Message</span>
+      <span class="d-send">&#8593;</span>
+    </div>
+    <div class="phone-home"></div>
+  </div>
+</figure>
+<p class="fine collage-caption">
+  Not screenshots — that's the real app's own styles, in miniature. In your
+  browser, on your Mac, on your iPhone: one space, everywhere.
+</p>
 
 <section class="pains" aria-label="Why Eleven exists">
   <h2>Ever wondered&hellip;</h2>
@@ -154,26 +291,133 @@ description: Eleven works just like the messengers you're used to — without th
   </p>
 </section>
 
+<section class="feature-group" aria-label="Feature highlights">
+  <h2>More than you'd expect</h2>
+  <p class="section-sub">
+    All the chat things, done properly — and then a few things no other
+    messenger has.
+  </p>
+  <ul class="cards">
+    <li>
+      <h3>Everything where you are</h3>
+      <p>
+        Start a conversation on your Mac, answer on your phone, catch up in
+        any browser. Read messages stay read, everywhere.
+      </p>
+    </li>
+    <li>
+      <h3>Apps built by asking</h3>
+      <p>
+        Ask for &ldquo;a holiday packing list&rdquo; or &ldquo;a habit
+        tracker&rdquo; and a little app appears right in your chat, made for
+        your group alone.
+      </p>
+    </li>
+    <li>
+      <h3>Helpers on a schedule</h3>
+      <p>
+        &ldquo;Send me a news summary every morning.&rdquo; Set up little
+        helpers that do things for your group, on your terms.
+      </p>
+    </li>
+    <li>
+      <h3>Your space, your rules</h3>
+      <p>
+        You (or someone you trust) runs the space. Decide who's in, what's
+        open, and even charge for membership — the money goes to you, not us.
+      </p>
+    </li>
+  </ul>
+  <p style="margin-top: 1.25rem">
+    <a href="/features/">See everything Eleven does &rarr;</a>
+  </p>
+</section>
+
+<section class="feature-group" id="pricing" aria-label="Pricing">
+  <h2>What it costs</h2>
+  <p class="section-sub">
+    Joining a space someone invited you to is always free. Creating spaces is
+    free too — paid plans add storage and keep Eleven running with no ads and
+    no investors.
+  </p>
+  <div class="plans">
+    <div class="plan">
+      <h3>Free</h3>
+      <span class="price">&euro;0</span>
+      <p>
+        Every feature. Create up to three spaces, with 1&nbsp;GB of photos
+        and files each.
+      </p>
+    </div>
+    <div class="plan">
+      <h3>Family</h3>
+      <span class="price">&euro;5<small>/year</small></span>
+      <p>
+        5&nbsp;GB of storage, and your space is never tidied away as unused.
+        One coffee, once a year.
+      </p>
+    </div>
+    <div class="plan">
+      <h3>Community &amp; Friends</h3>
+      <span class="price">&euro;4<small>/month</small></span>
+      <p>
+        10&nbsp;GB, for clubs, teams, and bigger circles.
+      </p>
+      <span class="alt">or &euro;40/year</span>
+    </div>
+    <div class="plan">
+      <h3>Business</h3>
+      <span class="price">&euro;99<small>/month</small></span>
+      <p>
+        25&nbsp;GB, for a small business that wants its chat out of big
+        tech's hands.
+      </p>
+      <span class="alt">or &euro;999/year</span>
+    </div>
+  </div>
+  <p class="fine" style="margin-top: 1.25rem">
+    Every plan is every feature — privacy is never the paid tier. Storage
+    allowances are deliberately roomy for how spaces actually get used, and
+    they'll grow. Upgrade any time from
+    <a href="https://home.elevenmessenger.com">your home page</a>; payment
+    happens on Stripe's secure page, so we never see your card, name, or
+    email.
+  </p>
+</section>
+
+<aside class="nerd-callout">
+  <p>
+    Does &ldquo;zsh beats bash&rdquo; mean anything to you? Do ECDH P-256 and
+    AES-256 get your heart rate up? There's a whole page of how this thing
+    actually works.
+  </p>
+  <a class="btn btn-ghost" href="/nerds/">The nerdy stuff &rarr;</a>
+</aside>
+
 <section id="get" class="get">
   <h2>Don't get mad. Get&nbsp;Eleven.</h2>
   <div class="get-grid">
     <div class="get-card">
       <h3>Mac</h3>
-      <p>A native desktop app.</p>
-      <span class="btn btn-primary is-soon" aria-disabled="true">Download — coming soon</span>
+      <p>A native desktop app. Two megabytes, and it updates itself.</p>
+      <a class="btn btn-primary" href="https://github.com/elevenmessenger/releases/releases/download/v0.5.0/Eleven-0.5.0.dmg">Download for Mac</a>
     </div>
     <div class="get-card">
       <h3>iPhone</h3>
-      <p>In TestFlight beta.</p>
+      <p>In beta now. The public TestFlight link opens soon.</p>
       <span class="btn btn-primary is-soon" aria-disabled="true">Join the beta — coming soon</span>
     </div>
     <div class="get-card">
       <h3>Any browser</h3>
-      <p>Already have an invite link?</p>
-      <span class="btn btn-ghost is-soon" aria-disabled="true">Open it in your browser</span>
+      <p>
+        Nothing to install. Create your own space, or open the invite link
+        someone sent you.
+      </p>
+      <a class="btn btn-ghost" href="https://home.elevenmessenger.com">Create your space</a>
     </div>
   </div>
   <p class="fine">
-    Links go live as each release ships. Until then, this is where they'll be.
+    Free to start, no account, no phone number. You'll be chatting in under a
+    minute.
   </p>
 </section>
