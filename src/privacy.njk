@@ -7,7 +7,7 @@ permalink: /privacy/
 
 <section class="prose">
   <h1>Privacy</h1>
-  <p class="updated">Last updated 2 July 2026</p>
+  <p class="updated">Last updated 11 July 2026</p>
 
   <p>
     Eleven is built so your conversations belong to you and whoever
@@ -25,6 +25,7 @@ permalink: /privacy/
     <li>the text of every message;</li>
     <li>attachments, including their file names;</li>
     <li>the sender's name as it's carried inside each message;</li>
+    <li>display names on the member list;</li>
     <li>group names and photos.</li>
   </ul>
 
@@ -36,17 +37,18 @@ permalink: /privacy/
   <ul>
     <li>
       <strong>Who's in a chat together.</strong> The server routes
-      messages to a chat's members, so it knows who's in each one.
+      messages to a chat's members, so it knows who's in each one — as
+      keys, not names.
     </li>
     <li>
-      <strong>Screen names.</strong> The roster keeps the display name
-      each person picked, so people know who they're talking to.
+      <strong>When, and how much.</strong> Message timing and sizes, as
+      with any messenger.
     </li>
   </ul>
   <p>
     It never sees your messages, your private key, or a chat's key —
     those only exist on your own devices. Steal the database and you'd
-    learn who talks to whom, and under what name. You wouldn't learn what
+    learn that keys talk to keys. You wouldn't learn a name, or a word
     anyone said.
   </p>
 
@@ -65,6 +67,15 @@ permalink: /privacy/
     one exception, and it can be switched off.
   </p>
 
+  <h2>GIF search</h2>
+  <p>
+    If you search for a GIF, your device asks Giphy directly, so Giphy
+    sees the search terms and your network address — never who you are on
+    Eleven or who you're chatting with. Our server sees nothing; the GIF
+    you pick is encrypted like any other picture. Don't use GIF search
+    and Giphy never hears from you.
+  </p>
+
   <h2>Notifications</h2>
   <p>
     Push notifications go out encrypted and get decrypted on your own
@@ -74,9 +85,11 @@ permalink: /privacy/
   <h2>Keeping and losing data</h2>
   <p>
     Messages live on the server only as ciphertext, and every chat is its
-    own self-contained instance. Lose your device with no backup and no
-    "add a device" link, and the keys are gone, along with any history
-    only you could read. We never had them to lose.
+    own self-contained instance. Saving your sign-in takes one tap, and
+    from then on any device can let you back in — the saved copy is
+    itself encrypted with a key only your devices hold. Skip that, lose
+    your only device, and the keys are gone, along with any history only
+    you could read. We never had them to lose.
   </p>
 
   <h2>Children</h2>

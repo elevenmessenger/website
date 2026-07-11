@@ -1,56 +1,61 @@
 ---
 layout: base.njk
-title: Take your group chat to Eleven
-htmlTitle: Take your group chat to Eleven
-description: Eleven works just like the messengers you're used to — without the ads, the tracking, or the big-tech company in the middle. Just a secret invite link.
+title: The group chat of your dreams
+htmlTitle: Eleven — the group chat of your dreams
+description: Eleven is a group chat messenger app for your family, your community, your business. Fast, private, not run by big tech. No ads, no tracking, no phone numbers.
+demo: true
 ---
 
 <section class="hero">
-  <h1>Take your group chat<br />to Eleven.</h1>
+  <h1>The group chat<br />of your dreams.</h1>
   <p class="lede">
-    Eleven is a group-chat and messaging app, just like the ones you're used
-    to — groups, photos, reactions, replies, bots — without the tracking and
-    metrics of big tech.
+    Eleven is a group chat messenger app for your family, your community,
+    your business. It's fast, it's private, and it isn't run by big tech.
+    There are no ads, no tracking, no phone numbers. Great chats, no
+    compromise.
   </p>
   <div class="cta">
     <a class="btn btn-primary" href="#get">Get Eleven</a>
-    <a class="btn btn-ghost" href="/security/">How it stays private</a>
+    <a class="btn btn-ghost" href="https://home.elevenmessenger.com">Sign in</a>
   </div>
   <p class="fine">
-    Invite-only — there's no public sign-up. Someone already in a chat sends you
-    a link.
+    Invite-only. Join with a link from someone already inside.
   </p>
 </section>
 
-<section class="pains" aria-label="Why Eleven exists">
-  <h2>Ever wondered&hellip;</h2>
-  <div class="pain">
-    <h3>Why is chatting to your friends run by big tech?</h3>
-    <p>
-      A group chat with your actual friends doesn't need a social network
-      wrapped around it. It doesn't need an algorithm deciding what you see,
-      and it definitely doesn't need a business model that runs on knowing
-      who you talk to.
-    </p>
+<!-- Real screenshots: the actual apps against a seeded demo space — the web
+     app (Lit Room theme) in a browser frame, the native Mac app's own window,
+     and the native iPhone app in Apple's product bezel. -->
+<figure class="collage" role="img"
+        aria-label="Real screenshots of the same family space three ways: the web app in the warm Lit Room theme, the Mac app, and the iPhone app.">
+  <div class="frame-web">
+    <div class="browser-bar">
+      <span class="tl tl-r"></span><span class="tl tl-y"></span><span class="tl tl-g"></span>
+      <span class="browser-url"><span class="lock">&#128274;</span>sunset-road.11ch.at</span>
+    </div>
+    <img src="/assets/hero/hero-web.png" alt="" width="1166" height="1120" loading="eager" />
   </div>
-  <div class="pain">
-    <h3>Why do you need a mobile number to talk to people you already know?</h3>
-    <p>
-      Your phone number is an identity you hand over before you've even said
-      hello. Eleven skips accounts entirely — you join with a secret link
-      from someone already inside.
-    </p>
-  </div>
-  <div class="pain">
-    <h3>Why choose between owning your chat and actually enjoying it?</h3>
-    <p>
-      You don't need to self-host Eleven, but if you do, it's designed to be
-      as simple as possible. Push notifications just work via a shared relay,
-      and keys can be backed up on our shared secure home server, both
-      optional.
-    </p>
-  </div>
-</section>
+  <img class="shot-mac" src="/assets/hero/hero-mac.png" alt="" width="1300" height="919" loading="eager" />
+  <img class="shot-iphone" src="/assets/hero/hero-ios.png" alt="" width="760" height="1554" loading="eager" />
+</figure>
+
+<nav class="audiences" aria-label="Eleven for your kind of group">
+  <a class="audience" href="/families/">
+    <h3>For families</h3>
+    <p>Kids without phones, grandparents on old iPads, parents on anything.</p>
+    <span class="go">Eleven for families &rarr;</span>
+  </a>
+  <a class="audience" href="/communities/">
+    <h3>For communities</h3>
+    <p>Clubs, teams, and groups — with memberships paid straight to you.</p>
+    <span class="go">Eleven for communities &rarr;</span>
+  </a>
+  <a class="audience" href="/business/">
+    <h3>For business</h3>
+    <p>Chat that can't read your plans. Flat price, not per seat.</p>
+    <span class="go">Eleven for business &rarr;</span>
+  </a>
+</nav>
 
 <section class="attrs" aria-label="What Eleven is">
   <h2>Eleven is&hellip;</h2>
@@ -62,16 +67,6 @@ description: Eleven works just like the messengers you're used to — without th
         You shouldn't have to learn how Eleven works. Click a link and
         you're chatting. It's one click to save your chats so you don't
         lose them: no signup required.
-      </p>
-    </div>
-  </div>
-
-  <div class="attr">
-    <h3>Open</h3>
-    <div class="attr-body">
-      <p>
-        Eleven is not run by a corporation or a big organisation. Get started
-        easily if you're invited to an existing space through the Eleven apps.
       </p>
     </div>
   </div>
@@ -90,29 +85,6 @@ description: Eleven works just like the messengers you're used to — without th
   </div>
 
   <div class="attr">
-    <h3>Web-based</h3>
-    <div class="attr-body">
-      <p>
-        Eleven stores messages on a server on the web. This allows freedom to
-        use Eleven on different devices. Browser window? Check. PWA with push
-        notifications? Check. Eleven doesn't shy away from being a web
-        application.
-      </p>
-    </div>
-  </div>
-
-  <div class="attr">
-    <h3>Native</h3>
-    <div class="attr-body">
-      <p>
-        Even though Eleven is entirely web-based, starting with iOS and Mac,
-        Eleven's apps are native where it matters: in the feels. They're fast,
-        quick to download, and don't hog your system resources.
-      </p>
-    </div>
-  </div>
-
-  <div class="attr">
     <h3>Tracking-free</h3>
     <div class="attr-body">
       <p>
@@ -122,35 +94,32 @@ description: Eleven works just like the messengers you're used to — without th
     </div>
   </div>
 
-  <div class="attr">
-    <h3>AI-enabled</h3>
-    <div class="attr-body">
-      <p>
-        Frustratingly, all of the above attributes mean that no corporation
-        has so far been compelled to produce an app like Eleven, with
-        world-class user experience, and absolute respect for the human using
-        the product. AI enables the production of the kind of product that we
-        wish big tech had, at a fraction of the cost.
-      </p>
-      <p>
-        Eleven is built with the latest AI models, and audited by them too,
-        including a security review by Claude&nbsp;Fable. We're in beta with
-        the source open, so nobody has to take our word for any of that. Check
-        the code yourself.
-      </p>
-      <p>
-        Additionally, AI agents can optionally be added to Eleven to do some
-        interesting (or stranger) things.
-      </p>
-    </div>
-  </div>
+  <p style="margin-top: 1.25rem">
+    <a href="/features/#eleven-is">More &rarr;</a>
+  </p>
 </section>
 
 <section class="creed" aria-label="What Eleven proves">
   <p>
-    <span class="creed-lead">Eleven is proof</span> that we can have great
-    user experience, good-enough security, openness and respect for the user
-    as a person and not an eyeball to be monetised.
+    <span class="creed-lead">Eleven is proof</span> that great user
+    experience, top grade security, privacy, openness, and respect are not
+    mutually exclusive.
+  </p>
+</section>
+
+<aside class="nerd-callout">
+  <p>
+    Does &ldquo;zsh beats bash&rdquo; mean anything to you? Do ECDH P-256 and
+    AES-256 get your heart rate up? There's a whole page of how this thing
+    actually works.
+  </p>
+  <a class="btn btn-ghost" href="/nerds/">The nerdy stuff &rarr;</a>
+</aside>
+
+<section class="creed creed-quiet" aria-label="The bar">
+  <p>
+    This is a new bar for what we should expect when we use software on the
+    internet.
   </p>
 </section>
 
@@ -159,21 +128,25 @@ description: Eleven works just like the messengers you're used to — without th
   <div class="get-grid">
     <div class="get-card">
       <h3>Mac</h3>
-      <p>A native desktop app.</p>
-      <span class="btn btn-primary is-soon" aria-disabled="true">Download — coming soon</span>
+      <p>A native desktop app. Two megabytes, and it updates itself.</p>
+      <a class="btn btn-primary" href="https://github.com/elevenmessenger/releases/releases/download/v0.5.0/Eleven-0.5.0.dmg">Download for Mac</a>
     </div>
     <div class="get-card">
       <h3>iPhone</h3>
-      <p>In TestFlight beta.</p>
+      <p>In beta now. The public TestFlight link opens soon.</p>
       <span class="btn btn-primary is-soon" aria-disabled="true">Join the beta — coming soon</span>
     </div>
     <div class="get-card">
       <h3>Any browser</h3>
-      <p>Already have an invite link?</p>
-      <span class="btn btn-ghost is-soon" aria-disabled="true">Open it in your browser</span>
+      <p>
+        Nothing to install. Create your own space, or open the invite link
+        someone sent you.
+      </p>
+      <a class="btn btn-ghost" href="https://home.elevenmessenger.com">Create your space</a>
     </div>
   </div>
   <p class="fine">
-    Links go live as each release ships. Until then, this is where they'll be.
+    Free to start, no account, no phone number. You'll be chatting in under a
+    minute.
   </p>
 </section>

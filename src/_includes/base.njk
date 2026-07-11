@@ -6,37 +6,51 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>{% if htmlTitle %}{{ htmlTitle }}{% else %}{{ title }} · Eleven{% endif %}</title>
     <meta name="description" content="{{ description }}" />
-    <meta name="theme-color" content="#fbf6ee" />
+    <meta name="color-scheme" content="light dark" />
+    <meta name="theme-color" content="#f6f7fb" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#15171c" media="(prefers-color-scheme: dark)" />
     <link rel="icon" type="image/png" sizes="32x32" href="/assets/icon_32.png" />
     <link rel="apple-touch-icon" href="/assets/icon_256.png" />
     <meta property="og:title" content="Eleven" />
     <meta property="og:description" content="{{ description }}" />
     <meta property="og:type" content="website" />
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link
-      href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&display=swap"
-      rel="stylesheet"
-    />
     <link rel="stylesheet" href="/styles.css" />
+    {% if demo %}<link rel="stylesheet" href="/demo.css" />{% endif %}
   </head>
   <body>
+    <canvas class="ambient-canvas" id="ambient-canvas" aria-hidden="true"></canvas>
     <header class="site-head">
       <a class="brand" href="/">
         <img class="brand-mark" src="/assets/icon_128.png" alt="" width="28" height="28" />
         Eleven
       </a>
-      <nav class="site-nav">
+      <nav class="site-nav" aria-label="Site">
+        <a href="/features/">Features</a>
         <a href="/security/">Security</a>
-        <a href="/privacy/">Privacy</a>
+        <a href="/story/">Story</a>
+        <a href="/openness/">Openness</a>
+        <a href="/planet/">Planet</a>
+        <a class="nav-signin" href="https://home.elevenmessenger.com">Sign in</a>
       </nav>
     </header>
 
     <main>{{ content | safe }}</main>
 
     <footer class="site-foot">
-      <p>No ads, no tracking, no big tech. Just your people.</p>
-      <p class="foot-links"><a href="/why-eleven/">Why &ldquo;Eleven&rdquo;?</a> · <a href="/security/">Security</a> · <a href="/privacy/">Privacy</a></p>
+      <p>The group chat of your dreams. No ads, no tracking, no big tech — just your people.</p>
+      <ul class="foot-links">
+        <li><a href="/why-eleven/">Why &ldquo;Eleven&rdquo;?</a></li>
+        <li><a href="/nerds/">The nerdy stuff</a></li>
+        <li><a href="/planet-scale/">Planet-scale</a></li>
+        <li><a href="/self-host/">Self-hosting</a></li>
+        <li><a href="/everyone/">Built for everyone</a></li>
+        <li><a href="/privacy/">Privacy</a></li>
+        <li><a href="https://status.elevenmessenger.com">Status</a></li>
+        <li><a href="https://11factor.org">The Eleven Factors</a></li>
+        <li><a href="https://github.com/elevenmessenger/releases">Downloads</a></li>
+        <li><a href="mailto:team@elevenmessenger.com">team@elevenmessenger.com</a></li>
+      </ul>
     </footer>
+    <script type="module" src="/ambient.js"></script>
   </body>
 </html>

@@ -1,0 +1,114 @@
+/* The hero collage: real screenshots of the real apps — the web app in the
+   product's Lit Room theme (framed in a browser window), the native Mac app
+   (its own window chrome, captured with alpha corners), and the native iPhone
+   app (framed in a device bezel). Shots are captured against a seeded demo
+   space; regenerate them with the scripts noted in the repo README when the
+   product's look changes. */
+
+.collage {
+  --d-border: light-dark(#e7e9f0, rgba(255, 255, 255, 0.1));
+  --d-sidebar: light-dark(#f8f9fc, #1a1d22);
+  --d-bg: light-dark(#f6f7fb, #15171c);
+  --d-muted: light-dark(#5a6170, #9aa1b3);
+  --d-shadow: light-dark(rgba(20, 30, 80, 0.18), rgba(0, 0, 0, 0.6));
+  margin: 2.5rem auto 0.75rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  max-width: 100%;
+}
+.frame-web img {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+/* browser window around the web shot */
+.frame-web {
+  width: min(23rem, 88vw);
+  border-radius: 12px;
+  border: 1px solid var(--d-border);
+  background: var(--d-sidebar);
+  box-shadow: 0 24px 70px var(--d-shadow);
+  overflow: hidden;
+  flex: none;
+}
+.browser-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 34px;
+  padding: 0 12px;
+  background: var(--d-sidebar);
+  border-bottom: 1px solid var(--d-border);
+}
+.tl {
+  width: 11px;
+  height: 11px;
+  border-radius: 50%;
+  flex: none;
+}
+.tl-r { background: #ff5f57; }
+.tl-y { background: #febc2e; }
+.tl-g { background: #28c840; }
+.browser-url {
+  flex: 1;
+  font-size: 11px;
+  color: var(--d-muted);
+  background: var(--d-bg);
+  border-radius: 999px;
+  padding: 3px 12px;
+  text-align: center;
+  overflow: hidden;
+  white-space: nowrap;
+}
+.browser-url .lock {
+  opacity: 0.7;
+  margin-right: 4px;
+}
+
+/* the Mac window shot carries its own chrome + rounded alpha corners */
+.shot-mac {
+  width: min(36rem, 92vw);
+  height: auto;
+  flex: none;
+  filter: drop-shadow(0 24px 60px var(--d-shadow));
+}
+
+/* the iPhone shot carries Apple's official product bezel with alpha edges */
+.shot-iphone {
+  width: 13.5rem;
+  height: auto;
+  flex: none;
+  filter: drop-shadow(0 24px 60px var(--d-shadow));
+}
+
+/* layout: browser behind-left, Mac centre, iPhone front-right */
+.collage .frame-web {
+  margin-right: -5rem;
+  transform: translateY(-2.25rem) rotate(-1.5deg);
+  z-index: 0;
+}
+.collage .shot-mac {
+  z-index: 1;
+}
+.collage .shot-iphone {
+  margin-left: -4.5rem;
+  transform: translateY(2rem);
+  z-index: 2;
+}
+.collage-caption {
+  text-align: center;
+  margin: 2.75rem 0 0;
+}
+@media (max-width: 68rem) {
+  .collage .frame-web { display: none; }
+}
+@media (max-width: 44rem) {
+  .collage .shot-mac { display: none; }
+  .collage .shot-iphone {
+    margin-left: 0;
+    transform: none;
+    width: min(16rem, 72vw);
+  }
+}
