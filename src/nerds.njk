@@ -97,45 +97,32 @@ permalink: /nerds/
   <h2>The deployment model</h2>
   <p>
     This is the part we think is genuinely novel — not any one piece, but
-    the combination:
+    the combination: one static ~18&nbsp;MB binary; one isolated process
+    and database per space; a thin TLS router over unix sockets;
+    scale-to-zero hibernation into object storage with a single-writer
+    lease; versioned side-by-side deploys with automatic rollback. It gets
+    <a href="/planet-scale/">a whole page of its own</a> — including the
+    arithmetic for scaling this to billions of members without the
+    experience degrading for any one of them.
   </p>
-  <ul>
-    <li>
-      <strong>One static binary.</strong> The entire server — HTTP,
-      WebSockets, the frontend, and an embedded pure-Go SQLite — compiles
-      to a single ~18&nbsp;MB file with no dependencies. Deploying is
-      copying one file. No containers, no orchestrator, no build toolchain
-      on the box.
-    </li>
-    <li>
-      <strong>One instance per space.</strong> Every space is its own
-      process with its own database file, its own keys, its own subdomain.
-      Isolation isn't a tenant column — it's a process boundary. A bug in
-      one space's instance can't read another space's data, because there
-      is no shared anything.
-    </li>
-    <li>
-      <strong>A thin router in front.</strong> One box runs a router that
-      terminates TLS (automatic certificates) and proxies each instance
-      over a local unix socket. Since message bodies are already
-      ciphertext, the router sees exactly what the app sees: nothing
-      readable.
-    </li>
-    <li>
-      <strong>Scale-to-zero hibernation.</strong> An idle space's state
-      parks in object storage as ciphertext and its process exits — zero
-      RAM, zero CPU. First request wakes it in about a second. Group chats
-      are idle most of the day; the fleet sleeps with them. This is where
-      most of <a href="/planet/">the ~30&times; carbon advantage</a> comes
-      from.
-    </li>
-    <li>
-      <strong>Versioned, zero-downtime deploys.</strong> Instances run
-      side-by-side versions; a new build canaries on one instance, then
-      rolls the fleet one at a time with health checks and automatic
-      rollback. A swap drains in-flight requests and drops nothing.
-    </li>
-  </ul>
+
+  <h2>Built by humanity, built to outlive AI</h2>
+  <p>
+    The licence is its own design decision: the <strong>GAI Licence</strong>
+    — MIT plus a share-alike clause returning any distributed derivative to
+    the commons, with preserved &#129302; authorship markers, because
+    generative AI distils the public work of billions of people and no one
+    downstream gets to fence that off.
+    <a href="/story/">The story page</a> has the why.
+  </p>
+  <p>
+    A companion engineering rule you can check in the code: everything must
+    stay maintainable by humans alone. Vanilla JavaScript with no build
+    step, one boring Go binary, tools you can read in an afternoon — so the
+    product outlives the availability, and the price, of the intelligence
+    that helped build it. If AI gets cheaper, this is a solid baseline; if
+    it goes away, nothing here dies with it.
+  </p>
 
   <h2>By the numbers</h2>
   <ul class="stats" aria-label="Engineering figures, as of July 2026">
@@ -238,12 +225,9 @@ permalink: /nerds/
   <h2>Run it yourself</h2>
   <p>
     Self-hosting is a right here, not a dare: one binary, a
-    &euro;4-a-month box, about ten minutes. Push notifications work through
-    the shared relay without you holding any Apple credentials, and both
-    the relay and the key-backup service are optional and replaceable. The
-    guide lives with the
-    <a href="https://github.com/elevenmessenger/releases">public
-    releases</a>.
+    &euro;4-a-month box, about ten minutes, certificates and updates
+    handled for you. It has <a href="/self-host/">its own page</a>, with
+    the actual commands.
   </p>
 
   <h2>Watch it run</h2>

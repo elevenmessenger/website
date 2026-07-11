@@ -1,123 +1,38 @@
-/* The hero collage: the actual app, in miniature — not screenshots.
-   Every rule here is lifted from the product's real stylesheet
-   (web/static/style.css): the Classic theme tokens, the .msg/.bubble
-   geometry, the reaction chips, the typing dots, the composer. If the app's
-   look changes, update these from the source the same way.
-   The browser frame swaps in the product's "Lit Room" theme tokens to show
-   that themes exist. All pairs are light-dark(), so the collage follows the
-   visitor's appearance just like the app does. */
+/* The hero collage: real screenshots of the real apps — the web app in the
+   product's Lit Room theme (framed in a browser window), the native Mac app
+   (its own window chrome, captured with alpha corners), and the native iPhone
+   app (framed in a device bezel). Shots are captured against a seeded demo
+   space; regenerate them with the scripts noted in the repo README when the
+   product's look changes. */
 
-.demo {
-  /* Classic theme (the app default) */
-  --d-bg: light-dark(#f6f7fb, #15171c);
-  --d-panel: light-dark(#ffffff, #1d2026);
-  --d-sidebar: light-dark(#f8f9fc, #1a1d22);
-  --d-ink: light-dark(#1c2333, #e7e9f0);
-  --d-muted: light-dark(#5a6170, #9aa1b3);
+.collage {
   --d-border: light-dark(#e7e9f0, rgba(255, 255, 255, 0.1));
-  --d-accent: light-dark(#5666f0, #7d8bff);
-  --d-accent-ink: light-dark(#ffffff, #0a0e2a);
-  --d-bubble-me: #5666f0;
-  --d-bubble-me-ink: #ffffff;
-  --d-bubble-them: light-dark(#eef0f6, #2a2e38);
-  --d-row-active: light-dark(#d9dfec, #2a2e38);
-  --d-shadow: light-dark(rgba(20, 30, 80, 0.1), rgba(0, 0, 0, 0.55));
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
-    Helvetica, Arial, sans-serif;
-  color: var(--d-ink);
-  line-height: 1.35;
-}
-
-/* Lit Room — the app's warm dusk theme, on the browser frame */
-.demo.theme-litroom {
-  --d-bg: light-dark(#efe3d6, #1b1418);
-  --d-panel: light-dark(#fff8f0, #241a1e);
-  --d-sidebar: light-dark(#fbf1e6, #1f161a);
-  --d-ink: light-dark(#2a211b, #f4e9dc);
-  --d-muted: light-dark(#736657, #b09a89);
-  --d-border: light-dark(#ece2d4, rgba(255, 255, 255, 0.1));
-  --d-accent: light-dark(#f0a93c, #ffb23e);
-  --d-accent-ink: light-dark(#3a2412, #2a1808);
-  --d-bubble-me: #ffb23e;
-  --d-bubble-me-ink: light-dark(#3a2412, #2a1808);
-  --d-bubble-them: light-dark(#f1ece4, #2f2329);
-}
-
-.demo,
-.demo * {
-  box-sizing: border-box;
-  margin: 0;
-}
-
-/* ---- frames ---- */
-.frame-mac {
-  width: min(34rem, 92vw);
-  border-radius: 12px;
-  border: 1px solid var(--d-border);
-  background: var(--d-panel);
-  box-shadow: 0 24px 70px var(--d-shadow);
-  overflow: hidden;
-}
-.mac-titlebar {
+  --d-sidebar: light-dark(#f8f9fc, #1a1d22);
+  --d-bg: light-dark(#f6f7fb, #15171c);
+  --d-muted: light-dark(#5a6170, #9aa1b3);
+  --d-shadow: light-dark(rgba(20, 30, 80, 0.18), rgba(0, 0, 0, 0.6));
+  margin: 2.5rem auto 0.75rem;
   display: flex;
   align-items: center;
-  gap: 7px;
-  height: 34px;
-  padding: 0 12px;
-  background: var(--d-sidebar);
-  border-bottom: 1px solid var(--d-border);
+  justify-content: center;
+  max-width: 100%;
 }
-.tl {
-  width: 11px;
-  height: 11px;
-  border-radius: 50%;
-}
-.tl-r { background: #ff5f57; }
-.tl-y { background: #febc2e; }
-.tl-g { background: #28c840; }
-.mac-body {
-  display: flex;
-  height: 23rem;
+.frame-web img,
+.frame-iphone img {
+  display: block;
+  width: 100%;
+  height: auto;
 }
 
-.frame-phone {
-  width: 12.5rem;
-  height: 27rem;
-  border-radius: 34px;
-  border: 6px solid light-dark(#20222a, #060708);
-  background: var(--d-panel);
-  box-shadow: 0 24px 70px var(--d-shadow);
-  overflow: hidden;
-  display: flex;
-  flex-direction: column;
-  position: relative;
-}
-.phone-island {
-  flex: none;
-  width: 60px;
-  height: 16px;
-  margin: 8px auto 0;
-  border-radius: 999px;
-  background: light-dark(#20222a, #060708);
-}
-.phone-home {
-  position: absolute;
-  bottom: 5px;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 68px;
-  height: 4px;
-  border-radius: 999px;
-  background: color-mix(in srgb, var(--d-ink) 30%, transparent);
-}
-
-.frame-browser {
-  width: min(24rem, 88vw);
+/* browser window around the web shot */
+.frame-web {
+  width: min(23rem, 88vw);
   border-radius: 12px;
   border: 1px solid var(--d-border);
-  background: var(--d-panel);
+  background: var(--d-sidebar);
   box-shadow: 0 24px 70px var(--d-shadow);
   overflow: hidden;
+  flex: none;
 }
 .browser-bar {
   display: flex;
@@ -128,6 +43,15 @@
   background: var(--d-sidebar);
   border-bottom: 1px solid var(--d-border);
 }
+.tl {
+  width: 11px;
+  height: 11px;
+  border-radius: 50%;
+  flex: none;
+}
+.tl-r { background: #ff5f57; }
+.tl-y { background: #febc2e; }
+.tl-g { background: #28c840; }
 .browser-url {
   flex: 1;
   font-size: 11px;
@@ -143,285 +67,53 @@
   opacity: 0.7;
   margin-right: 4px;
 }
-.browser-body {
-  height: 15rem;
-  display: flex;
-  flex-direction: column;
-  background: var(--d-panel);
+
+/* the Mac window shot carries its own chrome + rounded alpha corners */
+.shot-mac {
+  width: min(36rem, 92vw);
+  height: auto;
+  flex: none;
+  filter: drop-shadow(0 24px 60px var(--d-shadow));
 }
 
-/* ---- sidebar (Mac frame) — .sidebar / .side-head / thread rows ---- */
-.d-side {
-  width: 10.5rem;
-  flex: none;
-  display: flex;
-  flex-direction: column;
-  background: var(--d-sidebar);
-  border-right: 1px solid var(--d-border);
-  padding: 10px 8px;
-  gap: 2px;
-}
-.d-side-title {
-  font-weight: 700;
-  font-size: 13px;
-  padding: 2px 8px 8px;
-}
-.d-row {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 6px 8px;
-  border-radius: 10px;
-}
-.d-row.active {
-  background: var(--d-row-active);
-}
-.d-ava {
-  flex: none;
-  width: 26px;
-  height: 26px;
-  border-radius: 50%;
-  display: grid;
-  place-items: center;
-  font-size: 11px;
-  font-weight: 700;
-  color: var(--d-accent-ink);
-  background: var(--d-accent);
-}
-.d-ava.a2 { background: light-dark(#0e827e, #16b3ad); color: #fff; }
-.d-ava.a3 { background: light-dark(#9456c9, #b57ae8); color: #fff; }
-.d-ava.a4 { background: light-dark(#b85840, #ff8a6a); color: #fff; }
-.d-row-main {
-  min-width: 0;
-  flex: 1;
-}
-.d-row-name {
-  font-size: 12px;
-  font-weight: 600;
-  white-space: nowrap;
+/* iPhone bezel around the simulator shot (it renders its own status bar) */
+.frame-iphone {
+  width: 13rem;
+  border-radius: 38px;
+  border: 6px solid light-dark(#20222a, #060708);
+  box-shadow: 0 24px 70px var(--d-shadow);
   overflow: hidden;
-  text-overflow: ellipsis;
-}
-.d-row-prev {
-  font-size: 11px;
-  color: var(--d-muted);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-.d-unread {
   flex: none;
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  background: var(--d-accent);
+  background: #fff;
 }
 
-/* ---- thread pane ---- */
-.d-thread {
-  flex: 1;
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-  background: var(--d-panel);
-}
-.d-head {
-  flex: none;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 8px 14px;
-  min-height: 40px;
-  border-bottom: 1px solid var(--d-border);
-}
-.d-head .d-title {
-  font-weight: 700;
-  font-size: 13px;
-}
-.d-head .d-sub {
-  font-size: 11px;
-  color: var(--d-muted);
-}
-.d-presence {
-  display: inline-block;
-  width: 7px;
-  height: 7px;
-  border-radius: 50%;
-  background: light-dark(#237a41, #58b97e);
-  margin-right: 3px;
-}
-
-/* ---- feed + bubbles — real .msg/.bubble rules, minified ---- */
-.d-feed {
-  flex: 1;
-  min-height: 0;
-  overflow: hidden;
-  padding: 12px 14px;
-  display: flex;
-  flex-direction: column;
-  justify-content: flex-end;
-  gap: 4px;
-}
-.d-msg {
-  display: flex;
-  flex-direction: column;
-  align-self: flex-start;
-  max-width: 82%;
-  margin-top: 8px;
-}
-.d-msg.cont { margin-top: 2px; }
-.d-msg.me {
-  align-self: flex-end;
-  align-items: flex-end;
-}
-.d-msg .d-name {
-  font-size: 10px;
-  color: var(--d-muted);
-  margin: 0 6px 3px;
-}
-.d-bubble {
-  padding: 7px 11px;
-  border-radius: 15px;
-  background: var(--d-bubble-them);
-  font-size: 12px;
-  line-height: 1.35;
-  overflow-wrap: anywhere;
-}
-.d-msg.me .d-bubble {
-  background: var(--d-bubble-me);
-  color: var(--d-bubble-me-ink);
-  border-bottom-right-radius: 5px;
-}
-.d-msg.them .d-bubble {
-  border-bottom-left-radius: 5px;
-}
-
-/* reactions — real .reaction-chip rules */
-.d-reactions {
-  display: flex;
-  gap: 4px;
-  margin: 3px 2px 0;
-}
-.d-msg.me .d-reactions { justify-content: flex-end; }
-.d-chip {
-  background: var(--d-bubble-them);
-  color: var(--d-ink);
-  border: 1px solid transparent;
-  border-radius: 999px;
-  padding: 1px 7px;
-  font-size: 11px;
-  font-weight: 500;
-}
-.d-chip.mine {
-  border-color: var(--d-accent);
-  background: color-mix(in srgb, var(--d-accent) 16%, var(--d-panel));
-}
-
-/* typing dots — real .typing-bubble rules */
-.d-typing {
-  align-self: flex-start;
-  margin-top: 8px;
-  padding: 8px 11px;
-  border-radius: 15px;
-  border-bottom-left-radius: 5px;
-  background: var(--d-bubble-them);
-  display: flex;
-  gap: 4px;
-  align-items: center;
-}
-.d-typing .dot {
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background: var(--d-muted);
-  animation: d-typing 1.3s ease-in-out infinite;
-}
-.d-typing .dot:nth-child(2) { animation-delay: 0.18s; }
-.d-typing .dot:nth-child(3) { animation-delay: 0.36s; }
-@keyframes d-typing {
-  0%, 60%, 100% { transform: none; opacity: 0.45; }
-  30% { transform: translateY(-3px); opacity: 1; }
-}
-@media (prefers-reduced-motion: reduce) {
-  .d-typing .dot { animation: none; opacity: 0.5; }
-}
-
-/* ---- composer ---- */
-.d-composer {
-  flex: none;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 9px 12px;
-  border-top: 1px solid var(--d-border);
-}
-.d-input {
-  flex: 1;
-  border: 1px solid var(--d-border);
-  border-radius: 12px;
-  padding: 7px 12px;
-  font-size: 12px;
-  color: var(--d-muted);
-  background: var(--d-panel);
-  white-space: nowrap;
-  overflow: hidden;
-}
-.d-send {
-  flex: none;
-  width: 26px;
-  height: 26px;
-  border-radius: 50%;
-  display: grid;
-  place-items: center;
-  background: var(--d-accent);
-  color: var(--d-accent-ink);
-  font-size: 13px;
-  font-weight: 700;
-  line-height: 1;
-}
-
-/* ---- collage layout ---- */
-.collage {
-  margin: 2.5rem auto 0.75rem;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  max-width: 100%;
-}
-.collage .frame-browser {
-  margin-right: -4.5rem;
-  transform: translateY(-2.5rem) rotate(-1.5deg);
+/* layout: browser behind-left, Mac centre, iPhone front-right */
+.collage .frame-web {
+  margin-right: -5rem;
+  transform: translateY(-2.25rem) rotate(-1.5deg);
   z-index: 0;
 }
-/* Keep the occluded frames' content clear of the frame overlapping them. */
-.collage .frame-browser .d-feed,
-.collage .frame-browser .d-composer {
-  padding-right: 5.5rem;
-}
-.collage .frame-mac {
+.collage .shot-mac {
   z-index: 1;
 }
-.collage .frame-mac .d-feed,
-.collage .frame-mac .d-composer {
-  padding-right: 4.5rem;
-}
-.collage .frame-phone {
-  margin-left: -3.75rem;
-  transform: translateY(1.75rem);
+.collage .frame-iphone {
+  margin-left: -4.5rem;
+  transform: translateY(2rem);
   z-index: 2;
 }
 .collage-caption {
   text-align: center;
-  margin: 2.5rem 0 0;
+  margin: 2.75rem 0 0;
 }
 @media (max-width: 68rem) {
-  .collage .frame-browser { display: none; }
+  .collage .frame-web { display: none; }
 }
 @media (max-width: 44rem) {
-  .collage .frame-mac { display: none; }
-  .collage .frame-phone {
+  .collage .shot-mac { display: none; }
+  .collage .frame-iphone {
     margin-left: 0;
     transform: none;
+    width: min(15rem, 70vw);
   }
   .collage-caption { margin-top: 1rem; }
 }

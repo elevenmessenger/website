@@ -24,139 +24,26 @@ demo: true
   </p>
 </section>
 
-<!-- Not screenshots: the app itself in miniature, built from the product's own
-     stylesheet, so what you see here is exactly what ships. -->
+<!-- Real screenshots: the actual apps against a seeded demo space — the web
+     app (Lit Room theme) in a browser frame, the native Mac app's own window,
+     and the native iPhone app in a device bezel. -->
 <figure class="collage" role="img"
-        aria-label="The same family conversation shown three ways: in a web browser using the warm Lit Room theme, in the Mac app, and in the iPhone app.">
-  <div class="demo theme-litroom frame-browser">
+        aria-label="Real screenshots of the same family space three ways: the web app in the warm Lit Room theme, the Mac app, and the iPhone app.">
+  <div class="frame-web">
     <div class="browser-bar">
       <span class="tl tl-r"></span><span class="tl tl-y"></span><span class="tl tl-g"></span>
       <span class="browser-url"><span class="lock">&#128274;</span>sunset-road.11ch.at</span>
     </div>
-    <div class="browser-body">
-      <div class="d-head">
-        <span class="d-title">Grandma's 70th &#127881;</span>
-      </div>
-      <div class="d-feed">
-        <div class="d-msg them">
-          <div class="d-name">Dad</div>
-          <div class="d-bubble">Cake ordered &#127874;</div>
-        </div>
-        <div class="d-msg me">
-          <div class="d-bubble">Candles. ALL seventy.</div>
-          <div class="d-reactions"><span class="d-chip">&#128514; 3</span></div>
-        </div>
-      </div>
-      <div class="d-composer">
-        <span class="d-input">Message</span>
-        <span class="d-send">&#8593;</span>
-      </div>
-    </div>
+    <img src="/assets/hero/hero-web.png" alt="" width="1166" height="772" loading="eager" />
   </div>
-
-  <div class="demo frame-mac">
-    <div class="mac-titlebar">
-      <span class="tl tl-r"></span><span class="tl tl-y"></span><span class="tl tl-g"></span>
-    </div>
-    <div class="mac-body">
-      <div class="d-side">
-        <div class="d-side-title">Sunset Road</div>
-        <div class="d-row active">
-          <span class="d-ava">E</span>
-          <span class="d-row-main">
-            <span class="d-row-name">Everyone</span>
-            <span class="d-row-prev">On it — leaving now</span>
-          </span>
-        </div>
-        <div class="d-row">
-          <span class="d-ava a2">G</span>
-          <span class="d-row-main">
-            <span class="d-row-name">Grandma's 70th &#127881;</span>
-            <span class="d-row-prev">Candles. ALL seventy.</span>
-          </span>
-          <span class="d-unread"></span>
-        </div>
-        <div class="d-row">
-          <span class="d-ava a3">H</span>
-          <span class="d-row-main">
-            <span class="d-row-name">Holiday plans</span>
-            <span class="d-row-prev">Ferry or fly?</span>
-          </span>
-        </div>
-        <div class="d-row">
-          <span class="d-ava a4">M</span>
-          <span class="d-row-main">
-            <span class="d-row-name">Maeve</span>
-            <span class="d-row-prev">see you at 6</span>
-          </span>
-        </div>
-      </div>
-      <div class="d-thread">
-        <div class="d-head">
-          <span class="d-title">Everyone</span>
-          <span class="d-sub"><span class="d-presence"></span>3 online</span>
-        </div>
-        <div class="d-feed">
-          <div class="d-msg them">
-            <div class="d-name">Maeve</div>
-            <div class="d-bubble">Who's collecting Rosie from practice?</div>
-          </div>
-          <div class="d-msg me">
-            <div class="d-bubble">On it — leaving now &#128663;</div>
-            <div class="d-reactions"><span class="d-chip">&#10084;&#65039; 1</span></div>
-          </div>
-          <div class="d-msg them">
-            <div class="d-name">Rosie</div>
-            <div class="d-bubble">can ada stay for dinner</div>
-          </div>
-          <div class="d-msg me cont">
-            <div class="d-bubble">Of course &#127837;</div>
-            <div class="d-reactions"><span class="d-chip mine">&#128077; 2</span></div>
-          </div>
-          <div class="d-typing" aria-hidden="true"><span class="dot"></span><span class="dot"></span><span class="dot"></span></div>
-        </div>
-        <div class="d-composer">
-          <span class="d-input">Message</span>
-          <span class="d-send">&#8593;</span>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <div class="demo frame-phone">
-    <div class="phone-island"></div>
-    <div class="d-head">
-      <span class="d-title">Everyone</span>
-      <span class="d-sub"><span class="d-presence"></span>3 online</span>
-    </div>
-    <div class="d-feed">
-      <div class="d-msg them">
-        <div class="d-name">Maeve</div>
-        <div class="d-bubble">Who's collecting Rosie from practice?</div>
-      </div>
-      <div class="d-msg me">
-        <div class="d-bubble">On it — leaving now &#128663;</div>
-        <div class="d-reactions"><span class="d-chip">&#10084;&#65039; 1</span></div>
-      </div>
-      <div class="d-msg them">
-        <div class="d-name">Rosie</div>
-        <div class="d-bubble">can ada stay for dinner</div>
-      </div>
-      <div class="d-msg me cont">
-        <div class="d-bubble">Of course &#127837;</div>
-        <div class="d-reactions"><span class="d-chip mine">&#128077; 2</span></div>
-      </div>
-    </div>
-    <div class="d-composer">
-      <span class="d-input">Message</span>
-      <span class="d-send">&#8593;</span>
-    </div>
-    <div class="phone-home"></div>
+  <img class="shot-mac" src="/assets/hero/hero-mac.png" alt="" width="1300" height="919" loading="eager" />
+  <div class="frame-iphone">
+    <img src="/assets/hero/hero-ios.png" alt="" width="1206" height="2622" loading="eager" />
   </div>
 </figure>
 <p class="fine collage-caption">
-  Not screenshots — that's the real app's own styles, in miniature. In your
-  browser, on your Mac, on your iPhone: one space, everywhere.
+  Real screenshots, not mock-ups — one space, in your browser, on your Mac,
+  on your iPhone.
 </p>
 
 <section class="pains" aria-label="Why Eleven exists">

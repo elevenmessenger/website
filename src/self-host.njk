@@ -1,0 +1,88 @@
+---
+layout: base.njk
+title: Self-hosting
+htmlTitle: Self-hosting · Eleven
+description: Self-hosting Eleven is first class — one static binary, automatic TLS, automatic updates. A €4 VPS and ten minutes.
+permalink: /self-host/
+---
+
+<section class="prose">
+  <h1>Want to run it yourself?<br />That's the point.</h1>
+  <p class="updated">Self-hosting is first class here — not a shrug, not a wiki page of caveats.</p>
+
+  <p>
+    Most services treat self-hosting as a dare: a compose file, a reverse
+    proxy, a certificate dance, and a wall of "community supported". Eleven
+    treats it as a right. The server is <strong>one static binary</strong>
+    with everything inside — the app, the database engine, the TLS front
+    door — and it installs itself.
+  </p>
+
+  <h2>The whole install</h2>
+  <pre><code>curl -fsSL https://github.com/elevenmessenger/releases/releases/download/server/install.sh | sudo bash</code></pre>
+  <p>
+    That downloads the latest stable release for your architecture, verifies
+    its published checksum, and sets the box up: a locked-down service user,
+    the TLS router on ports 80/443, and hourly auto-updates with a health
+    check and automatic rollback. (Prefer not to pipe to shell? Download the
+    script from the same URL and read it first — it's short. We'd do the
+    same.)
+  </p>
+
+  <h2>Your first space</h2>
+  <p>
+    Point a DNS record at the box (<code>chat.example.com &rarr; your
+    box</code>), then:
+  </p>
+  <pre><code>lchat add-instance chat.example.com</code></pre>
+  <p>
+    It prints a one-click setup link. Open it, pick a name, and Eleven walks
+    you through setting up the space and inviting people. The certificate
+    issues itself on the first request — no certbot, no nginx, no reverse
+    proxy. Run <code>add-instance</code> again for the club: every space is
+    fully isolated, sharing nothing.
+  </p>
+
+  <h2>What you need</h2>
+  <ul>
+    <li>A small Linux box — Ubuntu or Debian, x86_64 or ARM. 1&nbsp;GB of
+      RAM is plenty; a &euro;4-a-month VPS works.</li>
+    <li>A domain or subdomain you can point at it.</li>
+    <li>Ten minutes, generously.</li>
+  </ul>
+
+  <h2>Nothing second-class about it</h2>
+  <ul>
+    <li>
+      <strong>The apps just work.</strong> Your members use the same web,
+      Mac, and iPhone apps against your box as against ours.
+    </li>
+    <li>
+      <strong>Push notifications work</strong> through the shared relay with
+      zero configuration — your box never holds any Apple credentials, and
+      the relay only ever sees ciphertext.
+    </li>
+    <li>
+      <strong>Updates keep coming.</strong> Your box follows our signed
+      release feed on the channel you choose (stable, beta, edge — or off),
+      health-checked with automatic rollback.
+    </li>
+    <li>
+      <strong>Bots too, optionally.</strong> The same binary runs the AI
+      helpers, with the keys held on whatever machine you choose.
+    </li>
+    <li>
+      <strong>And the point of it all:</strong> even on your own box, the
+      server sees only ciphertext. Self-hosting isn't how you get privacy —
+      <a href="/security/">that's built in</a> — it's how you get
+      sovereignty.
+    </li>
+  </ul>
+
+  <p>
+    The full guide lives with the
+    <a href="https://github.com/elevenmessenger/releases">public releases</a>.
+    Curious how one small binary carries all of this?
+    <a href="/planet-scale/">The architecture page</a> has the whole design.
+  </p>
+</section>
