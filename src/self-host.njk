@@ -18,6 +18,26 @@ permalink: /self-host/
     door — and it installs itself.
   </p>
 
+  <h2>Try it before you install anything</h2>
+  <pre><code>curl -LO https://github.com/elevenmessenger/releases/releases/download/server/lchat-linux-amd64
+chmod +x lchat-linux-amd64
+./lchat-linux-amd64 try</code></pre>
+  <p>
+    That's a complete, end-to-end-encrypted space served from whatever
+    machine you ran it on — a laptop, a Raspberry Pi, anything Linux — with
+    a real public address like <code>try-x7k2m.11ch.at</code>. No ports to
+    open, no domain, no certificate, no root. Invite someone; chat from any
+    browser or the apps. Stop the command and the trial address politely
+    retires — your space's data stays on your machine, in
+    <code>lchat-try.db</code>, ready for a permanent home.
+  </p>
+  <p class="fine">
+    How can that work? Your machine dials <em>out</em> to our tunnel
+    gateway, which lends the trial a name under our wildcard certificate —
+    details on <a href="/planet-scale/">the architecture page</a>. Trials
+    live for a day at most; keepers get the real install below.
+  </p>
+
   <h2>The whole install</h2>
   <pre><code>curl -fsSL https://github.com/elevenmessenger/releases/releases/download/server/install.sh | sudo bash</code></pre>
   <p>
