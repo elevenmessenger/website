@@ -305,6 +305,14 @@ section h2 {
 .creed-lead {
   color: var(--accent);
 }
+/* The quieter follow-up statement (home, after the nerd callout). */
+.creed-quiet {
+  margin-top: 4.5rem;
+}
+.creed-quiet p {
+  font-size: clamp(1.2rem, 2.6vw, 1.6rem);
+  font-weight: 550;
+}
 
 /* ---- feature cards ---- */
 .cards {
