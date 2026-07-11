@@ -357,6 +357,43 @@ section h2 {
   flex: none;
 }
 
+/* ---- audience links (home, under the collage) ---- */
+.audiences {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr));
+  gap: 1rem;
+  margin: 3rem 0 1rem;
+}
+a.audience {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 1.4rem 1.5rem;
+  text-decoration: none;
+  color: var(--ink);
+}
+a.audience:hover {
+  border-color: var(--accent);
+}
+a.audience h3 {
+  margin: 0;
+  font-size: 1.2rem;
+}
+a.audience p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.95rem;
+}
+a.audience .go {
+  margin-top: 0.4rem;
+  color: var(--accent);
+  font-weight: 600;
+  font-size: 0.95rem;
+}
+
 /* ---- pricing ---- */
 .plans {
   display: grid;
@@ -367,6 +404,10 @@ section h2 {
   display: flex;
   flex-direction: column;
   gap: 0.35rem;
+}
+.plan.featured {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 1px var(--accent);
 }
 .plan h3 {
   margin: 0;
@@ -437,6 +478,9 @@ table.compare .us {
 /* ---- get section ---- */
 .get {
   margin: 4rem 0 1rem;
+}
+.get h2 {
+  margin-bottom: 2.75rem;
 }
 .get-grid {
   display: grid;

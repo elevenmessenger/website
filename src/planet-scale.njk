@@ -8,13 +8,12 @@ permalink: /planet-scale/
 
 <section class="prose">
   <h1>Planet-scale,<br />one small space at a time</h1>
-  <p class="updated">The deployment architecture, in detail. Nerds welcome; this is the good stuff.</p>
+  <p class="updated">The deployment architecture, in detail. The full design, with the numbers.</p>
 
   <p>
-    Most chat platforms are one giant shared system wearing a trench coat:
+    Most chat platforms are one giant shared system:
     one database with everyone's rows in it, one fleet sized for the busiest
-    second of the busiest day, one blast radius. Eleven inverts that. There
-    is no big system — just a very large number of very small ones.
+    second of the busiest day, one blast radius. Eleven inverts that. There is no big system, just a very large number of very small ones.
   </p>
 
   <h2>The unit: one process per space</h2>
@@ -26,11 +25,11 @@ permalink: /planet-scale/
     app, database, everything — costs about 23&nbsp;MB of memory.
   </p>
   <p>
-    Isolation isn't a <code>tenant_id</code> column and a prayer; it's a
-    process boundary the kernel enforces. A bug in one space's process has
+    Isolation is a process boundary the kernel enforces, not a
+    <code>tenant_id</code> column. A bug in one space's process has
     no path to another space's data, because they share nothing: no tables,
     no caches, no message bus. And each space can run a different version of
-    the software, which makes deployment boring — in the best way.
+    the software, which keeps deployment boring.
   </p>
 
   <h2>The glue: a thin router</h2>
@@ -81,7 +80,7 @@ permalink: /planet-scale/
 
   <h2>The arithmetic of billions</h2>
   <p>
-    This design scales by multiplication, not by heroics. At any moment
+    This design scales by multiplication. At any moment
     only ~5&ndash;20% of spaces are awake. Projected at a million spaces
     (~10&nbsp;million members): roughly 100,000 warm processes &times;
     ~25&nbsp;MB &asymp; 2.5&nbsp;TB of active RAM, around a thousand
@@ -98,12 +97,11 @@ permalink: /planet-scale/
     numbers and keep measuring as we grow.
   </p>
 
-  <h2>Why this is also the green design</h2>
+  <h2>What it costs to run</h2>
   <p>
-    Everything above has a second reading: an infrastructure that sleeps
-    when its members do, runs compiled code in tiny processes, and is
-    structurally unable to run analytics on your conversations is an
-    infrastructure that barely draws power.
+    An infrastructure that sleeps when its members do, runs compiled code
+    in tiny processes, and can't compute over your conversations barely
+    draws power.
     <a href="/planet/">The planet page</a> does the full carbon arithmetic
     (~30&times; against a conventional stack), and
     <a href="https://11factor.org">The Eleven Factors</a> is the philosophy
