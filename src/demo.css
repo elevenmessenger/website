@@ -17,8 +17,7 @@
   justify-content: center;
   max-width: 100%;
 }
-.frame-web img,
-.frame-iphone img {
+.frame-web img {
   display: block;
   width: 100%;
   height: auto;
@@ -76,15 +75,12 @@
   filter: drop-shadow(0 24px 60px var(--d-shadow));
 }
 
-/* iPhone bezel around the simulator shot (it renders its own status bar) */
-.frame-iphone {
-  width: 13rem;
-  border-radius: 38px;
-  border: 6px solid light-dark(#20222a, #060708);
-  box-shadow: 0 24px 70px var(--d-shadow);
-  overflow: hidden;
+/* the iPhone shot carries Apple's official product bezel with alpha edges */
+.shot-iphone {
+  width: 13.5rem;
+  height: auto;
   flex: none;
-  background: #fff;
+  filter: drop-shadow(0 24px 60px var(--d-shadow));
 }
 
 /* layout: browser behind-left, Mac centre, iPhone front-right */
@@ -96,7 +92,7 @@
 .collage .shot-mac {
   z-index: 1;
 }
-.collage .frame-iphone {
+.collage .shot-iphone {
   margin-left: -4.5rem;
   transform: translateY(2rem);
   z-index: 2;
@@ -110,10 +106,9 @@
 }
 @media (max-width: 44rem) {
   .collage .shot-mac { display: none; }
-  .collage .frame-iphone {
+  .collage .shot-iphone {
     margin-left: 0;
     transform: none;
-    width: min(15rem, 70vw);
+    width: min(16rem, 72vw);
   }
-  .collage-caption { margin-top: 1rem; }
 }
