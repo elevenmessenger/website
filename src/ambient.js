@@ -56,7 +56,7 @@ function start() {
   const dark = bgRGB.length >= 3 && 0.299 * bgRGB[0] + 0.587 * bgRGB[1] + 0.114 * bgRGB[2] < 128;
   const room = dark
     ? { comp: "lighter", neutral: [216, 216, 224], neutralA: 0.26, mote: [255, 255, 255], moteA: 0.42, puffMul: 1 }
-    : { comp: "source-over", neutral: [26, 28, 38], neutralA: 0.5, mote: [24, 26, 36], moteA: 0.55, puffMul: 1.5 };
+    : { comp: "source-over", neutral: [26, 28, 38], neutralA: 0.65, mote: [24, 26, 36], moteA: 0.65, puffMul: 1.7 };
 
   const shapes = Array.from({ length: 5 }, () => makePuffShape(256));
   const sprites = shapes.map((s) => tinted(s, room.neutral));
@@ -76,8 +76,8 @@ function start() {
     const mul = room.puffMul;
     S.puffs = [];
     for (const layer of [
-      { n: Math.round(11 * k * mul), s: [480, 860], v: [13, 26], a: 0.6, dir: 1, band: [0.3, 0.98] },
-      { n: Math.round(9 * k * mul), s: [240, 480], v: [22, 42], a: 0.8, dir: -1, band: [0.42, 1.0] },
+      { n: Math.round(18 * k * mul), s: [480, 860], v: [13, 26], a: 0.6, dir: 1, band: [0.3, 0.98] },
+      { n: Math.round(14 * k * mul), s: [240, 480], v: [22, 42], a: 0.8, dir: -1, band: [0.42, 1.0] },
     ]) {
       for (let i = 0; i < layer.n; i++) {
         S.puffs.push({
@@ -93,7 +93,7 @@ function start() {
         });
       }
     }
-    S.motes = Array.from({ length: Math.min(60, Math.round(W / 24)) }, () => ({
+    S.motes = Array.from({ length: Math.min(110, Math.round(W / 13)) }, () => ({
       x: Math.random() * W,
       y: Math.random() * H,
       r: 0.5 + Math.random() * 1.2,
