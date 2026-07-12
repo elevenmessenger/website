@@ -16,7 +16,7 @@ permalink: /security/
 
   <ul class="stats" aria-label="Security facts">
     <li><span class="stat-n">0</span><span class="stat-l">passwords stored — none exist anywhere in the system</span></li>
-    <li><span class="stat-n">0</span><span class="stat-l">phone numbers or emails collected</span></li>
+    <li><span class="stat-n">0</span><span class="stat-l">phone numbers or emails needed to chat</span></li>
     <li><span class="stat-n">0</span><span class="stat-l">trackers or analytics, first- or third-party</span></li>
     <li><span class="stat-n">0</span><span class="stat-l">messages our servers can read</span></li>
   </ul>
@@ -100,8 +100,11 @@ permalink: /security/
       keys are handed out by the server and aren't verified out of band
       yet. A stolen database can't do anything with that, but an actively
       malicious server could swap in a key to intercept a
-      <em>new</em> conversation. Out-of-band verification is on the way
-      to close that gap.
+      <em>new</em> conversation. We're closing this gap in stages: spaces
+      already keep a signed, append-only history that can't be quietly
+      rewritten, and next come devices that cross-check that history with
+      each other, then a public log of key hand-outs — the piece that
+      shuts this for good.
     </li>
   </ul>
 

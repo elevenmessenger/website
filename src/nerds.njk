@@ -69,6 +69,13 @@ permalink: /nerds/
       key. Only its hash is stored.
     </li>
     <li>
+      <strong>Tamper-evident history:</strong> every space journals its
+      writes under chained, signed Merkle checkpoints (RFC 6962-style),
+      so a server that rewrites or hides history can be caught. Member
+      devices cross-checking each other's view of that history is the
+      next stage, then a public log of key hand-outs.
+    </li>
+    <li>
       <strong>AI helpers are members, not backdoors:</strong> a bot is an
       ordinary E2EE member whose "device" is a machine its operator runs —
       it can decrypt exactly the conversations it's been invited into, and
@@ -87,8 +94,9 @@ permalink: /nerds/
     Steal an Eleven space's entire database and you hold: a membership
     graph (which keys are in which threads), message timings and sizes,
     wrapped key blobs you can't unwrap, and ciphertext. No names, no
-    message content, no files, no phone numbers, no emails — the last two
-    because they were never collected. The
+    message content, no files, no phone numbers, no emails — chatting
+    never collects them, and a paid space's billing contact lives with
+    Stripe, not in any space's database. The
     <a href="/security/">security page</a> spells out the honest limits,
     including the one real gap (key distribution currently trusts the
     server for <em>new</em> conversations).
