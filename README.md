@@ -11,8 +11,12 @@ npm run serve   # local preview with live reload
 npm run build   # build to ./_site
 ```
 
-- Pages live in `src/` (home, features, story, openness, planet, nerds,
-  security, privacy, why-eleven), sharing `src/_includes/base.njk`.
+- Pages live in `src/`, sharing `src/_includes/base.njk`. They split in two:
+  the marketing surface (home, features, families/communities/business,
+  security, privacy) stays non-technical, and `/about/` is the hub that
+  introduces the philosophy/infrastructure pages (story, openness, planet,
+  planet-scale, nerds, why-eleven, everyone, self-host) — link nerdy things
+  from About, not from the marketing pages.
 - Styles are `src/styles.css`; design tokens are lifted from the product's own
   stylesheets (the app's "Classic" theme) so site and app read as one thing.
 - `src/demo.css` frames the hero collage — real screenshots of the real apps
