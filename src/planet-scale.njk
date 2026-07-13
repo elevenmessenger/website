@@ -2,7 +2,7 @@
 layout: base.njk
 title: Planet-scale, one small space at a time
 htmlTitle: Planet-scale · Eleven
-description: Eleven's deployment architecture in detail — one process per space, a thin router, scale-to-zero hibernation into object storage, and a path to billions of members.
+description: Eleven’s deployment architecture in detail — one process per space, a thin router, scale-to-zero hibernation into object storage, and a path to billions of members.
 permalink: /planet-scale/
 ---
 
@@ -12,7 +12,7 @@ permalink: /planet-scale/
 
   <p>
     Most chat platforms are one giant shared system:
-    one database with everyone's rows in it, one fleet sized for the busiest
+    one database with everyone’s rows in it, one fleet sized for the busiest
     second of the busiest day, one blast radius. Eleven inverts that. There is no big system, just a very large number of very small ones.
   </p>
 
@@ -26,8 +26,8 @@ permalink: /planet-scale/
   </p>
   <p>
     Isolation is a process boundary the kernel enforces, not a
-    <code>tenant_id</code> column. A bug in one space's process has
-    no path to another space's data, because they share nothing: no tables,
+    <code>tenant_id</code> column. A bug in one space’s process has
+    no path to another space’s data, because they share nothing: no tables,
     no caches, no message bus. And each space can run a different version of
     the software, which keeps deployment boring.
   </p>
@@ -35,9 +35,9 @@ permalink: /planet-scale/
   <h2>The glue: a thin router</h2>
   <p>
     In front of the instances sits a deliberately thin router: it terminates
-    TLS (certificates issue themselves via Let's Encrypt, including a
+    TLS (certificates issue themselves via Let’s Encrypt, including a
     wildcard for instant new spaces) and proxies each hostname to its
-    instance over a local unix socket. That's the whole job. Since message
+    instance over a local unix socket. That’s the whole job. Since message
     bodies are <a href="/security/">already ciphertext</a>, the router sees
     exactly what the instances see: nothing readable.
   </p>
@@ -51,10 +51,10 @@ permalink: /planet-scale/
   <h2>The trick: sleep as a first-class state</h2>
   <p>
     Group chats are bursty — quiet most of the day, alive at dinner time. So
-    an idle space doesn't idle: its state streams continuously into object
+    an idle space doesn’t idle: its state streams continuously into object
     storage (as the ciphertext it already is), and after enough quiet its
-    process simply exits. Zero memory, zero CPU. The space's cost while
-    asleep is a few megabytes of storage — a space's entire encrypted
+    process simply exits. Zero memory, zero CPU. The space’s cost while
+    asleep is a few megabytes of storage — a space’s entire encrypted
     history is typically 1&ndash;16&nbsp;MB.
   </p>
   <p>
@@ -62,7 +62,7 @@ permalink: /planet-scale/
     app — wakes it: the router holds the request, the activator restores
     state and starts the process, and the answer arrives about a second
     later. A single-writer lease in object storage guarantees that exactly
-    one live process ever owns a space's state, so waking and sleeping are
+    one live process ever owns a space’s state, so waking and sleeping are
     safe to race.
   </p>
 
@@ -86,12 +86,12 @@ permalink: /planet-scale/
     ~25&nbsp;MB &asymp; 2.5&nbsp;TB of active RAM, around a thousand
     provisioned vCPUs, ~15&nbsp;TB of parked ciphertext — a handful of
     racks, not a data centre. Nothing about the model changes between ten
-    spaces and a million; there's just more of the same small thing. The
+    spaces and a million; there’s just more of the same small thing. The
     experience never degrades with scale, because your space never shares a
     process, a database, or a noisy neighbour with anyone.
   </p>
   <p>
-    Today's whole production fleet — every space, the router, all the
+    Today’s whole production fleet — every space, the router, all the
     sibling services, and the AI helpers — measures about 550&nbsp;MB of
     RAM at a load average of 0.21 on two small CPUs. We publish those
     numbers and keep measuring as we grow.
@@ -100,7 +100,7 @@ permalink: /planet-scale/
   <h2>What it costs to run</h2>
   <p>
     An infrastructure that sleeps when its members do, runs compiled code
-    in tiny processes, and can't compute over your conversations barely
+    in tiny processes, and can’t compute over your conversations barely
     draws power.
     <a href="/planet/">The planet page</a> does the full carbon arithmetic
     (~30&times; against a conventional stack), and

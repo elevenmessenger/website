@@ -13,7 +13,7 @@ permalink: /nerds/
   <p>
     The rest of this site is written for people who just want to talk to
     their family. This page is for you: the design decisions, the actual
-    ciphers, and the numbers. If any claim here doesn't hold up, we want to
+    ciphers, and the numbers. If any claim here doesn’t hold up, we want to
     hear about it —
     <a href="mailto:team@elevenmessenger.com">team@elevenmessenger.com</a>.
   </p>
@@ -24,7 +24,7 @@ permalink: /nerds/
     compromised, the attacker gets nothing worth having.</strong> The server
     stores and relays opaque ciphertext plus key material it cannot open.
     It never sees message content, names, or file bytes, and it never
-    receives a usable key. Not "we promise not to look" — <em>can't</em>.
+    receives a usable key. Not "we promise not to look" — <em>can’t</em>.
   </p>
 
   <h2>The cryptography</h2>
@@ -36,7 +36,7 @@ permalink: /nerds/
     </li>
     <li>
       <strong>Per-thread keys:</strong> every conversation gets its own
-      AES-256-GCM key, wrapped to each member's public key via ECIES. The
+      AES-256-GCM key, wrapped to each member’s public key via ECIES. The
       server stores only the wrapped blobs. Membership is enforced by
       cryptography, not by a row in a permissions table.
     </li>
@@ -44,17 +44,17 @@ permalink: /nerds/
       <strong>Everything rides inside the envelope:</strong> attachments,
       their filenames, their MIME types, and sender names travel inside the
       encrypted payload — never as server-side metadata. Even roster
-      display names are sealed under a per-space key the server can't open.
+      display names are sealed under a per-space key the server can’t open.
     </li>
     <li>
       <strong>Invites:</strong> the one-time secret lives in the URL
       <code>#fragment</code>, which browsers never send to any server. It
-      bootstraps your keys locally, then it's spent.
+      bootstraps your keys locally, then it’s spent.
     </li>
     <li>
       <strong>Sign-in:</strong> WebAuthn passkeys — and not just for
       authentication. The PRF extension derives the key that seals your
-      backup vault, so the vault server holds ciphertext it can't open
+      backup vault, so the vault server holds ciphertext it can’t open
       either. No passwords exist anywhere in the system.
     </li>
     <li>
@@ -71,7 +71,7 @@ permalink: /nerds/
     <li>
       <strong>AI helpers are members, not backdoors:</strong> a bot is an
       ordinary E2EE member whose "device" is a machine its operator runs —
-      it can decrypt exactly the conversations it's been invited into, and
+      it can decrypt exactly the conversations it’s been invited into, and
       bot code never runs inside the server process.
     </li>
   </ul>
@@ -84,9 +84,9 @@ permalink: /nerds/
 
   <h2>What a stolen database actually yields</h2>
   <p>
-    Steal an Eleven space's entire database and you hold: a membership
+    Steal an Eleven space’s entire database and you hold: a membership
     graph (which keys are in which threads), message timings and sizes,
-    wrapped key blobs you can't unwrap, and ciphertext. No names, no
+    wrapped key blobs you can’t unwrap, and ciphertext. No names, no
     message content, no files, no phone numbers, no emails — the last two
     because they were never collected. The
     <a href="/security/">security page</a> spells out the honest limits,
@@ -139,7 +139,7 @@ permalink: /nerds/
   <h2>Against the privacy specialists</h2>
   <p>
     <a href="/features/">The features page</a> compares Eleven with the
-    apps regular people actually use. You'll want this table instead —
+    apps regular people actually use. You’ll want this table instead —
     every pillar of the Eleven model exists <em>somewhere</em> in this
     landscape; the bet is the combination.
   </p>
@@ -174,7 +174,7 @@ permalink: /nerds/
         </tr>
         <tr>
           <th scope="row">Onboarding</th>
-          <td class="us">Click a link, you're chatting</td>
+          <td class="us">Click a link, you’re chatting</td>
           <td>Install + phone verify</td>
           <td>Pick a server, register</td>
           <td>One-time invitation link</td>
