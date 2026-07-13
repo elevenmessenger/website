@@ -1,7 +1,7 @@
 ---
 layout: base.njk
 title: How the security model works
-description: Eleven's end-to-end encryption, explained honestly — what the server can and can't see, and the trade-offs we've made.
+description: Eleven’s end-to-end encryption, explained honestly — what the server can and can’t see, and the trade-offs we’ve made.
 permalink: /security/
 ---
 
@@ -24,45 +24,45 @@ permalink: /security/
   <h2>Your device holds the keys</h2>
   <p>
     When you join a chat, your device generates a keypair (ECDH P-256).
-    The public half goes on the chat's member list. The private half never
-    leaves your device. There's no password to steal, because there's no
+    The public half goes on the chat’s member list. The private half never
+    leaves your device. There’s no password to steal, because there’s no
     password. Your device is your identity.
   </p>
 
   <h2>Every chat has its own key</h2>
   <p>
     Each conversation, group or DM, gets its own AES-256 key. That key is
-    wrapped (encrypted) separately to every member's public key, and the
-    server only ever stores the wrapped copies, which it can't open.
+    wrapped (encrypted) separately to every member’s public key, and the
+    server only ever stores the wrapped copies, which it can’t open.
     Membership is the boundary, and cryptography enforces it, not a
     server setting.
   </p>
   <p>
-    Your device encrypts every message before it's sent: text,
-    attachments, file names, even the sender's name carried inside the
+    Your device encrypts every message before it’s sent: text,
+    attachments, file names, even the sender’s name carried inside the
     message. Display names on the member list are sealed too, under a key
     only members hold. The server just stores and relays ciphertext it
-    can't read. Push notifications arrive encrypted as well, and get
+    can’t read. Push notifications arrive encrypted as well, and get
     decrypted on your device.
   </p>
 
-  <h2>Invites don't leak</h2>
+  <h2>Invites don’t leak</h2>
   <p>
     An invite link carries a one-time secret after the <code>#</code> in
     the URL. Browsers never send that part to any server. It exists to
-    bootstrap your keys locally, then it's spent. The admin credential
-    only manages the member list — it can't decrypt anything.
+    bootstrap your keys locally, then it’s spent. The admin credential
+    only manages the member list — it can’t decrypt anything.
   </p>
 
   <h2>What the server has to see</h2>
   <p>
     To actually deliver messages, the server needs some information.
-    We'd rather say what, plainly:
+    We’d rather say what, plainly:
   </p>
   <ul>
     <li>
-      <strong>Who's in a chat with whom.</strong> It routes messages to
-      members, so it knows each chat's membership — as keys, not names.
+      <strong>Who’s in a chat with whom.</strong> It routes messages to
+      members, so it knows each chat’s membership — as keys, not names.
     </li>
     <li>
       <strong>When, and how much.</strong> Message timing and sizes are
@@ -77,7 +77,7 @@ permalink: /security/
   </ul>
   <p>
     So if the database were ever stolen, it would show that keys talk to
-    keys. It wouldn't show a name, and it wouldn't show a single word
+    keys. It wouldn’t show a name, and it wouldn’t show a single word
     anyone actually said.
   </p>
 
@@ -85,24 +85,24 @@ permalink: /security/
   <p>Every security model has edges. Ours:</p>
   <ul>
     <li>
-      <strong>Removing someone doesn't un-share the past.</strong> A
+      <strong>Removing someone doesn’t un-share the past.</strong> A
       removed member stops getting new messages, but a key they already
-      held isn't clawed back.
+      held isn’t clawed back.
     </li>
     <li>
       <strong>Your keys are yours to keep.</strong> Saving your sign-in
       takes one tap, and then any device can let you back in. Skip it,
       lose your only device, and your keys are gone along with any
-      history only you could read. We can't recover it. We never had it.
+      history only you could read. We can’t recover it. We never had it.
     </li>
     <li>
       <strong>Key hand-out still trusts the server — but no longer
       quietly.</strong> Public keys are handed out by the server, and
-      full out-of-band verification is still to come. What's already
+      full out-of-band verification is still to come. What’s already
       shipped narrows the gap: every key hand-out is committed to a
-      signed, append-only history that members' devices cross-check with
+      signed, append-only history that members’ devices cross-check with
       each other, and invite links cryptographically pin the invited
-      person's first key — so a swapped key is no longer silent; it
+      person’s first key — so a swapped key is no longer silent; it
       raises an alarm in the app. The last piece — a public log that
       every device checks every key against — is designed and being
       built.
@@ -112,9 +112,9 @@ permalink: /security/
   <h2>Check our work</h2>
   <p>
     All of this runs in the open — plain, readable code on your device,
-    not hidden behind an API. It's audited by the latest AI models too,
+    not hidden behind an API. It’s audited by the latest AI models too,
     including security review by Claude&nbsp;Fable. If something
-    here doesn't match what the code actually does, tell us:
+    here doesn’t match what the code actually does, tell us:
     <a href="mailto:team@elevenmessenger.com">team@elevenmessenger.com</a>.
   </p>
 

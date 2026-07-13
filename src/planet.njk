@@ -2,7 +2,7 @@
 layout: base.njk
 title: The planet
 htmlTitle: Planet · Eleven
-description: We publish the carbon bill for building Eleven with AI — and the working behind the ~30× lighter architecture it produced. The kiln burns hot so the brick doesn't have to.
+description: We publish the carbon bill for building Eleven with AI — and the working behind the ~30× lighter architecture it produced. The kiln burns hot so the brick doesn’t have to.
 permalink: /planet/
 ---
 
@@ -18,7 +18,7 @@ permalink: /planet/
     <strong>19&nbsp;kg of CO&#8322;e</strong> (honest error bars: somewhere
     between 3&nbsp;kg and 100&nbsp;kg) for the entire build so far — about
     what a family car emits driving 110&nbsp;km. The live number, the
-    methodology, and everything it deliberately doesn't capture yet are at
+    methodology, and everything it deliberately doesn’t capture yet are at
     <a href="https://status.elevenmessenger.com/carbon.html">status.elevenmessenger.com/carbon</a>,
     part of <a href="/openness/">the openness charter</a>.
   </p>
@@ -31,17 +31,17 @@ permalink: /planet/
     systems.</em> A large language model is a spectacularly inefficient way
     to compute anything — and the finest tool ever made for
     <em>creating</em> things that compute efficiently. The kiln burns hot
-    so the brick doesn't have to.
+    so the brick doesn’t have to.
   </p>
   <p>
-    So the question that matters isn't whether the kiln was hot. It's
-    whether the brick came out efficient. Here's the brick:
+    So the question that matters isn’t whether the kiln was hot. It’s
+    whether the brick came out efficient. Here’s the brick:
   </p>
 
   <ul class="stats" aria-label="Headline carbon figures">
     <li>
       <span class="stat-n">~2 g</span>
-      <span class="stat-l">CO&#8322;e per member per year on Eleven's architecture, at scale</span>
+      <span class="stat-l">CO&#8322;e per member per year on Eleven’s architecture, at scale</span>
     </li>
     <li>
       <span class="stat-n">~75 g</span>
@@ -70,16 +70,16 @@ permalink: /planet/
   <h2>Why the brick is ~30&times; lighter</h2>
   <p>
     The conventional way to run a service like this is one giant
-    multi-tenant system on a big always-on cloud fleet: everyone's rows in
+    multi-tenant system on a big always-on cloud fleet: everyone’s rows in
     one database, thousands of servers provisioned for the busiest moment
     ever expected, an orchestration layer, a monitoring fleet, and
-    analytics pipelines idling around the clock. Eleven's advantage over
-    that isn't one trick — it's four ordinary decisions that multiply:
+    analytics pipelines idling around the clock. Eleven’s advantage over
+    that isn’t one trick — it’s four ordinary decisions that multiply:
   </p>
   <ul>
     <li>
       <strong>It sleeps when you do.</strong> Each space is its own tiny
-      system that simply switches off when nobody's chatting — costing
+      system that simply switches off when nobody’s chatting — costing
       nothing — and wakes in about a second. Group chats are quiet most of
       the day; a provisioned-for-peak fleet idles through all of it. Worth
       roughly 2&ndash;4&times;.
@@ -101,8 +101,8 @@ permalink: /planet/
     <li>
       <strong>Privacy saves power.</strong> Because everything is encrypted
       before it reaches any server, there is nothing to index, analyse,
-      mine, or "enrich" — every feature a server can't see is a feature it
-      can't burn watts computing. Surveillance is expensive. Worth 1.2&ndash;2&times;, structurally guaranteed.
+      mine, or "enrich" — every feature a server can’t see is a feature it
+      can’t burn watts computing. Surveillance is expensive. Worth 1.2&ndash;2&times;, structurally guaranteed.
     </li>
   </ul>
   <p>
@@ -126,8 +126,8 @@ permalink: /planet/
       &ldquo;only&rdquo; 5&ndash;10&times;.
     </li>
     <li>
-      The build tally doesn't yet count everything (cache reads, cloud-side
-      agent runs) — the page says exactly what's missing rather than
+      The build tally doesn’t yet count everything (cache reads, cloud-side
+      agent runs) — the page says exactly what’s missing rather than
       pretending completeness.
     </li>
     <li>
@@ -154,7 +154,7 @@ permalink: /planet/
   <p>
     This page exists to be checked — and copied. If you run a service,
     publish your numbers: what it draws, what it emits, what it cost to
-    build. We'd be glad to be beaten. The point is that everyone who ships
+    build. We’d be glad to be beaten. The point is that everyone who ships
     software should know, and say, what it costs the planet.
   </p>
 

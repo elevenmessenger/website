@@ -53,6 +53,11 @@ button:focus-visible {
   outline-offset: 2px;
   border-radius: 4px;
 }
+/* The 4px radius above shapes the ring on text links; pill buttons keep
+   their own geometry when focused. */
+.btn:focus-visible {
+  border-radius: 999px;
+}
 
 h1,
 h2,
@@ -192,6 +197,10 @@ main {
 /* ---- buttons ---- */
 .btn {
   display: inline-block;
+  /* <button> doesn't inherit text styles (UA default is ~13px system) —
+     the gate's Hit-me button was the site's first non-<a> .btn. */
+  font: inherit;
+  cursor: pointer;
   padding: 0.7rem 1.35rem;
   border-radius: 999px;
   font-weight: 600;

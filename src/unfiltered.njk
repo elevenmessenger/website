@@ -1,0 +1,340 @@
+---
+layout: base.njk
+title: What we really think
+htmlTitle: Eleven — what we really think
+description: The unfiltered cut of the Eleven homepage. Expletives ahead.
+demo: true
+robots: noindex
+---
+
+<!-- The "tell us what you really think" cut of the homepage: same structure,
+     same design, none of the Sunday best. Gated behind an expletives warning.
+     The copy blocks marked 👨 are Paul’s words — human-certified, off-limits
+     to LLM rewriting (see the messenger repo’s CLAUDE.md authorship-marker
+     convention). Structure/typesetting around them is fair game. -->
+
+<style>
+  /* Page-scoped styles for the unfiltered cut — the novelty stays
+     self-contained rather than leaking into styles.css. */
+  .byline {
+    font-size: clamp(1.35rem, 3vw, 1.7rem);
+    font-weight: 600;
+    letter-spacing: -0.01em;
+    color: var(--ink);
+    margin: 0 0 1rem;
+  }
+  .audiences-aside {
+    text-align: center;
+    color: var(--muted);
+    max-width: 40rem;
+    margin: 1.5rem auto 0;
+  }
+  .creed p + p { margin-top: 1.1rem; }
+  .creed p.creed-follow {
+    font-size: clamp(1.05rem, 2.2vw, 1.3rem);
+    font-weight: 500;
+    line-height: 1.5;
+    letter-spacing: -0.01em;
+    color: var(--muted);
+    max-width: 36rem;
+    margin-left: auto;
+    margin-right: auto;
+  }
+  /* The two-weight split layout for this page’s callout: bold thesis left,
+     running text right, button anchored under the thesis. */
+  .nerd-callout-split {
+    padding: 1.8rem 2rem;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1.15fr);
+    gap: 1.25rem 3rem;
+    align-items: start;
+  }
+  .nerd-lead {
+    margin: 0;
+    font-weight: 600;
+    font-size: 1.2rem;
+    line-height: 1.45;
+    letter-spacing: -0.01em;
+    color: var(--ink);
+    text-wrap: pretty;
+    max-width: none;
+  }
+  .nerd-body { display: flex; flex-direction: column; gap: 0.75rem; }
+  .nerd-body p { margin: 0; color: var(--muted); }
+  .nerd-callout-split .btn { grid-column: 1 / -1; justify-self: start; }
+  @media (max-width: 44rem) {
+    .nerd-callout-split { grid-template-columns: 1fr; gap: 1rem; }
+  }
+
+  /* ---- the expletives gate ---- */
+  .gate {
+    position: fixed;
+    inset: 0;
+    z-index: 10;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1.5rem;
+    background: color-mix(in srgb, var(--bg) 55%, transparent);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+  }
+  .gate-card {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    box-shadow: 0 24px 60px var(--shadow);
+    max-width: 30rem;
+    padding: 2.2rem 2.4rem;
+  }
+  .gate-card h2 {
+    font-size: clamp(1.7rem, 4vw, 2.2rem);
+    margin: 0 0 0.9rem;
+  }
+  .gate-card p { color: var(--muted); margin: 0 0 1.1rem; }
+  .gate-card p:last-of-type { margin-bottom: 1.6rem; }
+  .gate-card:focus { outline: none; }
+  .gate-card .cta { margin-bottom: 0; }
+  @media (prefers-reduced-motion: no-preference) {
+    .gate-card { animation: gate-in 0.35s ease; }
+    @keyframes gate-in {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: none; }
+    }
+  }
+</style>
+<noscript>
+  <style>
+    /* Without JS the gate can’t be dismissed — skip it. Anyone arriving
+       script-free still chose a link labelled "what we really think". */
+    .gate { display: none; }
+  </style>
+</noscript>
+
+<div id="unfiltered-page">
+
+  <section class="hero">
+    <!-- 👨 headline + byline + lede + fine print -->
+    <h1 id="unfiltered-headline" tabindex="-1">Big tech has been fucking you for 20&nbsp;years.</h1>
+    <p class="byline">It’s Eleven o’clock. Time to get unfucked.</p>
+    <p class="lede">
+      Is it too much to expect a messenger app not to shove features you
+      don’t need, to give a shit about your privacy, and to consider your
+      data yours? Is it too much to expect software that respects you and it
+      actually feel good to use?
+    </p>
+    <div class="cta">
+      <a class="btn btn-primary" href="#get">Get Eleven</a>
+      <a class="btn btn-ghost" href="https://home.elevenmessenger.com">Sign in</a>
+    </div>
+    <p class="fine">
+      Invite-only. We’re doing the thing because apparently you only want it
+      when you can’t have it. Also we haven’t proven the scaling model.
+    </p>
+  </section>
+
+  <!-- Real screenshots: identical to the polite homepage. -->
+  <figure class="collage" role="img"
+          aria-label="Real screenshots of the same family space three ways: the web app in the warm Lit Room theme, the Mac app, and the iPhone app.">
+    <div class="frame-web">
+      <div class="browser-bar">
+        <span class="tl tl-r"></span><span class="tl tl-y"></span><span class="tl tl-g"></span>
+        <span class="browser-url"><span class="lock">&#128274;</span>sunset-road.11ch.at</span>
+      </div>
+      <img src="/assets/hero/hero-web.png" alt="" width="1166" height="1120" loading="eager" />
+    </div>
+    <img class="shot-mac" src="/assets/hero/hero-mac.png" alt="" width="1300" height="919" loading="eager" />
+    <img class="shot-iphone" src="/assets/hero/hero-ios.png" alt="" width="760" height="1554" loading="eager" />
+  </figure>
+
+  <nav class="audiences" aria-label="Eleven for your kind of group">
+    <!-- 👨 all three cards -->
+    <a class="audience" href="/families/">
+      <h3>Your family deserves better</h3>
+      <p>You wouldn’t put up with a creep at the window, why do we put up with creeps holding our data?</p>
+      <span class="go">Eleven for families &rarr;</span>
+    </a>
+    <a class="audience" href="/communities/">
+      <h3>Your community deserves better</h3>
+      <p>A place to convene that isn’t corporate controlled, but kinda feels like it is. That’s all you ever wanted, right?</p>
+      <span class="go">Eleven for communities &rarr;</span>
+    </a>
+    <a class="audience" href="/business/">
+      <h3>For business</h3>
+      <p>If you ever fantasised about reading your employees’ private messages, fuck right off. If you actually care about them, use this.</p>
+      <span class="go">Eleven for business &rarr;</span>
+    </a>
+  </nav>
+  <!-- 👨 -->
+  <p class="audiences-aside">
+    Why shouldn’t you be able to host your chats on a Raspberry Pi if you
+    wanted to? You can with Eleven if you want (really).
+  </p>
+
+  <section class="attrs" aria-label="What Eleven is">
+    <!-- 👨 heading + all three attributes -->
+    <h2>Eleven <em>is</em> different, but it doesn’t <em>feel</em> different.</h2>
+
+    <div class="attr">
+      <h3>Friendly and approachable.</h3>
+      <div class="attr-body">
+        <p>
+          Eleven tries to embody &ldquo;it just works&rdquo;. It does as much
+          as possible to make you feel like you’re doing as little as
+          possible.
+        </p>
+      </div>
+    </div>
+
+    <div class="attr">
+      <h3>Fabled security.</h3>
+      <div class="attr-body">
+        <p>
+          Anthropic’s massive marketing stunt to hold Mythos from the world
+          seems to genuinely be backed by strong capability on the security
+          front. This is a case of: if you can’t beat them, just ask them to
+          give you ALL THE SECURE.
+        </p>
+      </div>
+    </div>
+
+    <div class="attr">
+      <h3>WHY do we keep putting up with being tracked?</h3>
+      <div class="attr-body">
+        <p>
+          To say Eleven doesn’t track you is an understatement. The ONLY time
+          your data is collected is when you pay, and everything else: your
+          keys, your chat, every interaction is hidden, even from us. There’s
+          nothing on the server that identifies you or your data.
+        </p>
+      </div>
+    </div>
+
+    <p style="margin-top: 1.25rem">
+      <a href="/features/#eleven-is">More &rarr;</a>
+    </p>
+  </section>
+
+  <section class="creed" aria-label="What Eleven proves">
+    <!-- 👨 all three beats -->
+    <p>
+      <span class="creed-lead">Eleven is proof</span> that smarter people
+      than us could have been deploying respectful apps years ago, but chose
+      not to.
+    </p>
+    <p>That’s a bitter pill.</p>
+    <p class="creed-follow">
+      From now on, you should expect nothing less than full transparency
+      from your software vendors. Eleven is the blueprint for a better way to
+      build secure, equitable, distributed software, every bit as integrated
+      and convenient as today’s status quo apps.
+    </p>
+  </section>
+
+  <aside class="nerd-callout nerd-callout-split">
+    <!-- 👨 lead + both body paragraphs -->
+    <p class="nerd-lead">
+      Eleven is a humble attempt to build a product and infrastructure using
+      the capabilities of today’s AI, but attempting to account for the
+      uncomfortable truth that AI vendors have engaged in theft at a massive
+      scale to train their models, bait-and-switch in their presupposed
+      &ldquo;open&rdquo; values, and subterfuge when it comes to environmental
+      impact.
+    </p>
+    <div class="nerd-body">
+      <p>
+        How we’ve approached &ldquo;minting&rdquo; (fuck off, Claude) Eleven
+        is an effort to illustrate if you <em>must</em> use AI to build
+        software, then bloody well build efficient software that works well
+        and can be shared with everyone.
+      </p>
+      <p>
+        That’s not to say we think you should give the software away for
+        free. Well, actually it is, but we think people will still pay you if
+        you do.
+      </p>
+    </div>
+    <a class="btn btn-ghost" href="/about/">Read all about Eleven &rarr;</a>
+  </aside>
+
+  <section class="creed creed-quiet" aria-label="The bar">
+    <!-- 👨 -->
+    <p>
+      We don’t think it was too much to ask. Fuckin pricks.
+    </p>
+  </section>
+
+  <section id="get" class="get">
+    <h2>Don’t get mad. Get&nbsp;Eleven.</h2>
+    <div class="get-grid">
+      <!-- 👨 all three card bodies + the fine print -->
+      <div class="get-card">
+        <h3>Mac</h3>
+        <p>Mac-assed, 51MB (not Electron, not a web wrapper, fully-native, except for some of the custom apps. Yep, custom apps.)</p>
+        <a class="btn btn-primary" href="https://github.com/elevenmessenger/releases/releases/download/v0.5.0/Eleven-0.5.0.dmg">Download for Mac</a>
+      </div>
+      <div class="get-card">
+        <h3>iPhone</h3>
+        <p>In beta now. TestFlight on request. Public link sooooon.</p>
+        <span class="btn btn-primary is-soon" aria-disabled="true">Join the beta — coming soon</span>
+      </div>
+      <div class="get-card">
+        <h3>Any browser</h3>
+        <p>Yeah, it works in the browser too. It’s a web app. Why wouldn’t it?</p>
+        <a class="btn btn-ghost" href="https://home.elevenmessenger.com">Create your space</a>
+      </div>
+    </div>
+    <p class="fine">
+      Free to start. No account, no phone number, no credit card, no cookies,
+      no external JS. It all seems too good to be true, but here we are.
+    </p>
+  </section>
+
+</div>
+
+<div class="gate" id="gate" role="dialog" aria-modal="true" aria-labelledby="gate-h" hidden>
+  <div class="gate-card" id="gate-card" tabindex="-1">
+    <h2 id="gate-h">Expletives ahead.</h2>
+    <!-- 👨 both paragraphs + both button labels -->
+    <p>
+      Building something like Eleven is like an archaeological dig where you
+      scratch the dirt away and reveal hidden secrets below the surface.
+      Secrets like: we could have been having software like this all along.
+      It hits you in the feels.
+    </p>
+    <p>
+      Here’s a version of the site that’s a bit more unfiltered, a bit less
+      corporate. Give it a go?
+    </p>
+    <div class="cta">
+      <button class="btn btn-primary" id="gate-enter" type="button">Hit me</button>
+      <a class="btn btn-ghost" href="/">I am young or easily offended</a>
+    </div>
+  </div>
+</div>
+
+<script>
+  // The gate arms via JS so that script-free visitors fall through to the
+  // page (the <noscript> style above hides the gate for them). IIFE so no
+  // top-level identifier can collide with a browser global (a bare
+  // `const chrome` is a parse error in Chrome, which killed the gate).
+  (() => {
+    const gate = document.getElementById("gate");
+    const page = document.getElementById("unfiltered-page");
+    const siteChrome = document.querySelectorAll(".site-head, .site-foot");
+    gate.hidden = false;
+    page.inert = true;
+    siteChrome.forEach((el) => (el.inert = true));
+    document.body.style.overflow = "hidden";
+    // Focus the dialog, not the button — screen readers announce from the
+    // top, and nothing renders pre-lit.
+    document.getElementById("gate-card").focus();
+    document.getElementById("gate-enter").addEventListener("click", () => {
+      gate.remove();
+      page.inert = false;
+      siteChrome.forEach((el) => (el.inert = false));
+      document.body.style.overflow = "";
+      document.getElementById("unfiltered-headline").focus();
+    });
+  })();
+</script>
