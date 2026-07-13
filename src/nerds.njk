@@ -69,11 +69,13 @@ permalink: /nerds/
       key. Only its hash is stored.
     </li>
     <li>
-      <strong>Tamper-evident history:</strong> every space journals its
-      writes under chained, signed Merkle checkpoints (RFC 6962-style),
-      so a server that rewrites or hides history can be caught. Member
-      devices cross-checking each other's view of that history is the
-      next stage, then a public log of key hand-outs.
+      <strong>Tamper-evident history:</strong> every write — messages and
+      key hand-outs alike — is journaled under chained, signed Merkle
+      checkpoints (RFC 6962-style). Members' devices gossip the chain
+      heads inside E2EE traffic and alarm on forks, clients can demand
+      inclusion proofs for held messages, and invite links carry a MAC
+      that pins the joiner's first key. A public witness log — anchoring
+      the chain outside the server — is the designed next step.
     </li>
     <li>
       <strong>AI helpers are members, not backdoors:</strong> a bot is an
@@ -98,8 +100,8 @@ permalink: /nerds/
     never collects them, and a paid space's billing contact lives with
     Stripe, not in any space's database. The
     <a href="/security/">security page</a> spells out the honest limits,
-    including the one real gap (key distribution currently trusts the
-    server for <em>new</em> conversations).
+    including what's still open on key distribution (a swapped key is
+    caught and alarmed today; a public witness log comes next).
   </p>
 
   <h2>The deployment model</h2>
