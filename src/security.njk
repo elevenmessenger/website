@@ -16,7 +16,7 @@ permalink: /security/
 
   <ul class="stats" aria-label="Security facts">
     <li><span class="stat-n">0</span><span class="stat-l">passwords stored — none exist anywhere in the system</span></li>
-    <li><span class="stat-n">0</span><span class="stat-l">phone numbers or emails collected</span></li>
+    <li><span class="stat-n">0</span><span class="stat-l">phone numbers or emails needed to chat</span></li>
     <li><span class="stat-n">0</span><span class="stat-l">trackers or analytics, first- or third-party</span></li>
     <li><span class="stat-n">0</span><span class="stat-l">messages our servers can read</span></li>
   </ul>
@@ -96,12 +96,16 @@ permalink: /security/
       history only you could read. We can’t recover it. We never had it.
     </li>
     <li>
-      <strong>Key hand-out currently trusts the server.</strong> Public
-      keys are handed out by the server and aren’t verified out of band
-      yet. A stolen database can’t do anything with that, but an actively
-      malicious server could swap in a key to intercept a
-      <em>new</em> conversation. Out-of-band verification is on the way
-      to close that gap.
+      <strong>Key hand-out still trusts the server — but no longer
+      quietly.</strong> Public keys are handed out by the server, and
+      full out-of-band verification is still to come. What’s already
+      shipped narrows the gap: every key hand-out is committed to a
+      signed, append-only history that members’ devices cross-check with
+      each other, and invite links cryptographically pin the invited
+      person’s first key — so a swapped key is no longer silent; it
+      raises an alarm in the app. The last piece — a public log that
+      every device checks every key against — is designed and being
+      built.
     </li>
   </ul>
 
