@@ -197,6 +197,10 @@ main {
 /* ---- buttons ---- */
 .btn {
   display: inline-block;
+  /* <button> doesn't inherit text styles (UA default is ~13px system) —
+     the gate's Hit-me button was the site's first non-<a> .btn. */
+  font: inherit;
+  cursor: pointer;
   padding: 0.7rem 1.35rem;
   border-radius: 999px;
   font-weight: 600;
