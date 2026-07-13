@@ -7,6 +7,7 @@
     <title>{% if htmlTitle %}{{ htmlTitle }}{% else %}{{ title }} · Eleven{% endif %}</title>
     <meta name="description" content="{{ description }}" />
     <meta name="color-scheme" content="light dark" />
+    {% if robots %}<meta name="robots" content="{{ robots }}" />{% endif %}
     <meta name="theme-color" content="#f6f7fb" media="(prefers-color-scheme: light)" />
     <meta name="theme-color" content="#15171c" media="(prefers-color-scheme: dark)" />
     <link rel="icon" type="image/png" sizes="32x32" href="/assets/icon_32.png" />
