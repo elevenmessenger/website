@@ -93,6 +93,7 @@ robots: noindex
   }
   .gate-card p { color: var(--muted); margin: 0 0 1.1rem; }
   .gate-card p:last-of-type { margin-bottom: 1.6rem; }
+  .gate-card:focus { outline: none; }
   .gate-card .cta { margin-bottom: 0; }
   @media (prefers-reduced-motion: no-preference) {
     .gate-card { animation: gate-in 0.35s ease; }
@@ -293,7 +294,7 @@ robots: noindex
 </div>
 
 <div class="gate" id="gate" role="dialog" aria-modal="true" aria-labelledby="gate-h" hidden>
-  <div class="gate-card">
+  <div class="gate-card" id="gate-card" tabindex="-1">
     <h2 id="gate-h">Expletives ahead.</h2>
     <!-- 👨 both paragraphs + both button labels -->
     <p>
@@ -315,21 +316,26 @@ robots: noindex
 
 <script>
   // The gate arms via JS so that script-free visitors fall through to the
-  // page (the <noscript> style above hides the gate for them).
-  const gate = document.getElementById("gate");
-  const page = document.getElementById("unfiltered-page");
-  const chrome = document.querySelectorAll(".site-head, .site-foot");
-  gate.hidden = false;
-  page.inert = true;
-  chrome.forEach((el) => (el.inert = true));
-  document.body.style.overflow = "hidden";
-  const enter = document.getElementById("gate-enter");
-  enter.focus();
-  enter.addEventListener("click", () => {
-    gate.remove();
-    page.inert = false;
-    chrome.forEach((el) => (el.inert = false));
-    document.body.style.overflow = "";
-    document.getElementById("unfiltered-headline").focus();
-  });
+  // page (the <noscript> style above hides the gate for them). IIFE so no
+  // top-level identifier can collide with a browser global (a bare
+  // `const chrome` is a parse error in Chrome, which killed the gate).
+  (() => {
+    const gate = document.getElementById("gate");
+    const page = document.getElementById("unfiltered-page");
+    const siteChrome = document.querySelectorAll(".site-head, .site-foot");
+    gate.hidden = false;
+    page.inert = true;
+    siteChrome.forEach((el) => (el.inert = true));
+    document.body.style.overflow = "hidden";
+    // Focus the dialog, not the button — screen readers announce from the
+    // top, and nothing renders pre-lit.
+    document.getElementById("gate-card").focus();
+    document.getElementById("gate-enter").addEventListener("click", () => {
+      gate.remove();
+      page.inert = false;
+      siteChrome.forEach((el) => (el.inert = false));
+      document.body.style.overflow = "";
+      document.getElementById("unfiltered-headline").focus();
+    });
+  })();
 </script>
