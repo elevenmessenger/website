@@ -1,0 +1,142 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Overview and orientation — Running the fleet</title>
+<link rel="stylesheet" href="guide.css" />
+<script src="guide.js" defer></script>
+</head>
+<body data-page="index.html">
+<div class="frame">
+<nav class="side"></nav>
+<main class="content">
+<div class="wrap">
+
+<header class="top">
+  <p class="eyebrow"><span class="robot">&#129302;</span> Running the fleet &middot; Part 01 of 09</p>
+  <h1>Overview and orientation</h1>
+  <p class="thesis">This guide explains, from the ground up, how the Eleven Messenger fleet is deployed and operated: <strong>what runs where, how each piece is started and supervised, and exactly which commands you type</strong> to add, remove, inspect, update, and repair things.</p>
+</header>
+
+<div class="sysmap" data-highlight=""></div>
+<p class="sysmap-caption">The whole system on one map. Every detailed page in this guide reproduces this map with the part it covers highlighted, so you always know where you are.</p>
+
+<h2 id="who-this-is-for">Who this guide is for, and what it assumes</h2>
+<p>This guide is written for a person who needs to operate this system — not for the people who wrote it. It assumes you are comfortable with the basics of system administration: you can open a terminal, connect to a server with <code>ssh</code>, edit a file, and run a command. It assumes only a passing familiarity with <a href="reference.html#gloss-systemd">systemd</a> (the Linux service manager), <a href="reference.html#gloss-dns">DNS</a>, and <a href="reference.html#gloss-s3">object storage</a> — every one of those is explained where it first matters, and again in the <a href="reference.html#glossary">glossary</a>.</p>
+<p>Everything here is deliberately repetitive in places. Key ideas — for example, that <em>one chat space is one process with one database file</em>, or that <em>the object-storage lock is the real source of truth about who may write</em> — are restated wherever they matter, because internalising those few ideas makes every command in this guide predictable rather than memorised.</p>
+
+<div class="plain">
+  <span class="label">In plain words</span>
+  <p>You are looking after a small number of Linux servers. Each server runs one program, called <code>lchat</code>, which plays several roles at once. Chat groups live on these servers as small, separate processes, one per group. Idle groups are put to sleep and their data is parked in Amazon&rsquo;s object storage. This guide teaches you how to look after all of that.</p>
+</div>
+
+<h2 id="what-the-product-is">What the product is, in one paragraph</h2>
+<p>Eleven Messenger is an end-to-end encrypted group chat product. Every chat group — called a <strong>space</strong> — runs as its own fully isolated server-side unit: its own process, its own SQLite database file, its own admin token, and its own subdomain (for example <code>chat-a.example.com</code>). The server side only ever stores and relays <em>ciphertext</em> — encrypted bytes it cannot read — because all encryption and decryption happens on members&rsquo; devices. This matters operationally: <strong>nothing you do as an operator can expose message content</strong>, because the servers never hold the keys. Copying a database file, replicating it to object storage, or moving it between machines is safe by construction.</p>
+
+<h2 id="the-one-idea">The one idea behind &ldquo;planet scale&rdquo;</h2>
+<p>The system is designed so that it can grow to a very large number of spaces without a large number of servers, and the design is captured in the repository document <code>docs/planet-scale.md</code>. The core idea has three parts:</p>
+<ul>
+  <li><strong>One space, one process, one database file — forever.</strong> Spaces are never consolidated into a shared database. This is simultaneously the isolation story (one space crashing cannot hurt another), the sharding story (a space can move to any machine by moving one file), and the security story.</li>
+  <li><strong>An idle space does not deserve a running process.</strong> Because a space&rsquo;s entire state is one SQLite file of ciphertext, that file can be parked in object storage (Amazon S3) when nobody is talking, and the process can exit. When someone next opens the space, the system restores the file and starts the process again, in a few seconds. This is called <a href="hibernation.html"><strong>hibernation</strong></a>.</li>
+  <li><strong>Several servers can share the work without a central coordinator.</strong> Each server (this guide calls them <strong>boxes</strong>) announces itself by writing a small heartbeat object into the shared S3 bucket. A well-known hashing rule decides which box should host which space, and a per-space lock object in S3 guarantees that two boxes can never write the same space&rsquo;s data at the same time. This is called <a href="mesh.html"><strong>the mesh</strong></a>.</li>
+</ul>
+
+<h2 id="vocabulary">The vocabulary this guide uses everywhere</h2>
+<p>Nine words carry most of the weight in this guide. They are defined properly in the <a href="reference.html#glossary">glossary</a>, but you will get much further if you internalise them now:</p>
+<div class="tablewrap">
+<table>
+  <tr><th>Word</th><th>Meaning</th></tr>
+  <tr><td><strong>space</strong></td><td>One chat group, as members experience it. Server-side, a space is one instance (next row).</td></tr>
+  <tr><td><strong>instance</strong></td><td>The server-side unit behind a space: one process, one SQLite database file, one subdomain. This guide uses &ldquo;instance&rdquo; when talking about servers and &ldquo;space&rdquo; when talking about the product; they name the same thing from two sides.</td></tr>
+  <tr><td><strong>host</strong></td><td>An instance&rsquo;s full domain name, for example <code>chat-a.example.com</code>. The host is the identity of an instance: it names its database file, its systemd unit, its socket, and its certificate.</td></tr>
+  <tr><td><strong>box</strong></td><td>One Linux server in the fleet. A box runs the router, many instances, and the supporting services.</td></tr>
+  <tr><td><strong>the router</strong></td><td>The one process on a box that listens on the public ports (80 and 443). It holds the TLS certificates and forwards each request to the right instance. See <a href="router.html">part 02</a>.</td></tr>
+  <tr><td><strong>the registry</strong></td><td>A small SQLite database (<code>/data/registry.db</code>) on each box listing every host the box serves and how to reach it. The router reads its routing table from here.</td></tr>
+  <tr><td><strong>unit</strong></td><td>A systemd service definition. Instances run under a template unit called <code>lchat@&lt;host&gt;.service</code>; the router runs under <code>lchat-router.service</code>. See <a href="processes.html">part 03</a>.</td></tr>
+  <tr><td><strong>the bucket</strong></td><td>The Amazon S3 bucket used for hibernation: parked space databases, per-space lock objects, and mesh heartbeats all live here. See <a href="hibernation.html">part 06</a>.</td></tr>
+  <tr><td><strong>the lease</strong></td><td>The per-space lock object in the bucket. Whichever process holds a space&rsquo;s lease is the only process allowed to write that space&rsquo;s data. The lease is the ultimate tie-breaker in the whole design.</td></tr>
+</table>
+</div>
+
+<h2 id="one-binary">One program, many roles</h2>
+<p>Almost everything in this system is a single, statically compiled Go program called <code>lchat</code>. There is no interpreter to install, no runtime to patch, and no package manager involved: deploying software to a box means copying one file. The same binary behaves differently depending on the subcommand it is started with:</p>
+<div class="tablewrap">
+<table>
+  <tr><th>Invocation</th><th>Role</th><th>Explained in</th></tr>
+  <tr><td><code>lchat router</code></td><td>The front door: TLS, routing, and (when configured) the hibernation activator and the mesh.</td><td><a href="router.html">Part 02</a>, <a href="hibernation.html">06</a>, <a href="mesh.html">07</a></td></tr>
+  <tr><td><code>lchat --socket &hellip; --db &hellip;</code></td><td>One messenger instance (this is what each <code>lchat@&lt;host&gt;</code> unit runs).</td><td><a href="processes.html">Part 03</a></td></tr>
+  <tr><td><code>lchat add-instance</code>, <code>deploy</code>, <code>instances</code>, <code>hibernate</code>, &hellip;</td><td>The operator&rsquo;s command-line tools, run over <code>ssh</code> on the box.</td><td><a href="reference.html#commands">Part 09</a></td></tr>
+  <tr><td><code>lchat controld</code></td><td>The root-only local control daemon that creates and deletes instances on request.</td><td><a href="spaces.html">Part 05</a></td></tr>
+  <tr><td><code>lchat cloud</code></td><td>The public, unprivileged self-serve provisioner (lets signed-in users create their own spaces).</td><td><a href="spaces.html">Part 05</a></td></tr>
+  <tr><td><code>lchat update run</code></td><td>One pass of the auto-updater (normally fired hourly by a systemd timer).</td><td><a href="deploys.html">Part 04</a></td></tr>
+  <tr><td><code>lchat bot run</code></td><td>A bot sidecar: an ordinary encrypted chat member that happens to run on a machine.</td><td><a href="processes.html#bot-sidecars">Part 03</a></td></tr>
+</table>
+</div>
+<p>Two sibling services are separate small binaries from the same repository, deployed next to the messenger: the <strong>home server</strong> (<code>home</code>, the anonymous passkey-gated backup store) and the <strong>push relay</strong> (<code>push</code>, the central Apple push-notification signer). To the router they are just two more names in the routing table; they are covered in <a href="processes.html#sibling-services">part 03</a>.</p>
+
+<h2 id="a-request">Following one request through the system</h2>
+<p>To make the map concrete, here is what happens when a member opens <code>https://chat-a.example.com</code> in a browser:</p>
+<ol>
+  <li>DNS resolves <code>chat-a.example.com</code> to a box&rsquo;s public address. (A wildcard DNS record usually covers every subdomain at once, so new spaces need no DNS work.)</li>
+  <li>The <strong>router</strong> on that box accepts the connection on port 443 and presents the TLS certificate for that hostname — either a per-host certificate it obtained automatically from Let&rsquo;s Encrypt, or a wildcard certificate.</li>
+  <li>The router looks the hostname up in the <strong>registry</strong> and finds the instance&rsquo;s unix socket, <code>/run/lchat/chat-a.example.com.sock</code>.</li>
+  <li>If the instance is awake, the router forwards the request over that socket and the instance answers. If the instance is <strong>hibernating</strong>, the router&rsquo;s built-in activator first claims the space&rsquo;s lease in S3, restores the database if needed, starts the instance process as a child, and then forwards the request (this adds a few seconds, once).</li>
+  <li>If this box is part of a <strong>mesh</strong> and the hashing rule says a different box owns this space, the router transparently forwards the whole request to that box instead.</li>
+</ol>
+<p>Every step of that journey has its own page in this guide, and each page walks the same journey from its own component&rsquo;s point of view.</p>
+
+<h2 id="what-is-real">What is running today, and what is aspirational</h2>
+<p>The planet-scale design (<code>docs/planet-scale.md</code>) was built incrementally, and parts of it are still design rather than code. Throughout this guide, three badges mark the difference, and you should trust them: <span class="status built">running today</span> means the behaviour is in production code you can operate now; <span class="status partial">partially built</span> means a seam or a first half exists but the full behaviour does not; <span class="status planned">designed, not built</span> means the repository contains a written design and <em>no</em> operable code — nothing for an operator to run, configure, or monitor.</p>
+<div class="tablewrap">
+<table>
+  <tr><th>Capability</th><th>Status</th><th>What exists</th></tr>
+  <tr><td>The router, registry, per-instance units, versioned deploys, release channels, auto-updates</td><td><span class="status built">running today</span></td><td>The whole of <a href="router.html">parts 02</a>–<a href="deploys.html">04</a>.</td></tr>
+  <tr><td>Self-serve space creation (control daemon + cloud provisioner) and the reaper</td><td><span class="status built">running today</span></td><td>The whole of <a href="spaces.html">part 05</a>.</td></tr>
+  <tr><td>Instance hibernation (activator, lease, replication to S3, scheduled wakes, sidecar co-spawn)</td><td><span class="status built">running today</span></td><td>The whole of <a href="hibernation.html">part 06</a>. Opt-in per host.</td></tr>
+  <tr><td>The mesh (multiple boxes, S3 heartbeats, hash placement, proxy to owner, route replication, fleet-wide status)</td><td><span class="status built">running today</span></td><td><a href="mesh.html">Part 07</a>. Production runs two boxes, both mesh members, splitting a scoped domain set. Route mutations after creation (renames, removals, hibernate flips) still don&rsquo;t replicate — see <a href="mesh.html#mesh-limits">the honest limits section</a>.</td></tr>
+  <tr><td>Fleet backup (continuous replication of every database to a backup bucket)</td><td><span class="status built">running today</span></td><td><a href="operations.html#backups">Part 08</a>.</td></tr>
+  <tr><td>Fully deferred space creation (a create becomes only a registry row, no files touched)</td><td><span class="status partial">partially built</span></td><td>Creation is split into register + materialize steps, and hibernating creates skip the systemd half — but they still write the env file, stage the binary, and wake once to mint the setup invite. See <a href="spaces.html#hibernating-creates">part 05</a>.</td></tr>
+  <tr><td>Attachments in an object store (instead of on the box&rsquo;s disk)</td><td><span class="status partial">partially built</span></td><td>The storage interface (<code>blobstore.go</code>) exists; only the on-disk implementation is real. The object-store implementation is roadmap.</td></tr>
+  <tr><td>Certificate cache in S3 (needed the day two boxes share certificate issuance)</td><td><span class="status partial">partially built</span></td><td><code>LCHAT_CERT_CACHE=s3</code> is reserved and deliberately <em>refuses to start</em>; only the on-disk cache works. See <a href="mesh.html#mesh-limits">part 07</a>.</td></tr>
+  <tr><td>Billing rails (Stripe pointers and entitlement flags in the cloud ledger)</td><td><span class="status partial">partially built</span></td><td>The schema and code exist and are dormant until the Stripe environment variables are set.</td></tr>
+  <tr><td>Geographic placement (<code>home_region</code>) and the co-op provider seam (<code>provider</code>)</td><td><span class="status partial">partially built</span></td><td>Both are columns in the registry, written but never read. No behaviour keys on them yet.</td></tr>
+  <tr><td>Multi-region operation; relocating a space between regions while it sleeps</td><td><span class="status planned">designed, not built</span></td><td>Design only, in <code>docs/planet-scale.md</code>.</td></tr>
+  <tr><td>An autoscaling cloud front plane (load balancer, autoscaling group, golden machine image)</td><td><span class="status planned">designed, not built</span></td><td>Design only. Production is a small number of hand-provisioned boxes.</td></tr>
+  <tr><td>Sealed bucket (encrypted object names and metadata in the home store)</td><td><span class="status planned">designed, not built</span></td><td>Design only; object keys are plain user ids today, and the bucket stays private.</td></tr>
+  <tr><td>Proper metrics (wake latency, lease conflicts, replication lag as gauges)</td><td><span class="status planned">designed, not built</span></td><td>These exist only as log lines today. See <a href="operations.html#observability">part 08</a> for what you <em>can</em> observe.</td></tr>
+</table>
+</div>
+<div class="warn">
+  <span class="label">Please note</span>
+  <p>When a page in this guide describes aspirational behaviour, it is framed in a dashed &ldquo;designed, not built&rdquo; panel like the ones you will see later, so that nothing aspirational can be mistaken for something you could run today. If you find yourself looking for a command this guide has not given you, check the status badges first.</p>
+</div>
+
+<h2 id="reading-order">How to read this guide</h2>
+<p>The parts are ordered so that each one only depends on the ones before it. If you are new to the system, read parts 02 and 03 before anything else — they establish the router and the process model that everything else builds on. If you are here to do a specific task, <a href="operations.html">part 08</a> is a task-oriented runbook with step-by-step procedures, each of which links back to the explanatory pages.</p>
+<ol>
+  <li><a href="index.html">Overview and orientation</a> — this page.</li>
+  <li><a href="router.html">The router</a> — the front door of every box: TLS certificates, the routing table, the registry.</li>
+  <li><a href="processes.html">Everything that runs on a box</a> — each process, its systemd unit, how it is started, supervised, configured, and inspected; the filesystem layout.</li>
+  <li><a href="deploys.html">Installing and updating the software</a> — the version store, staged deploys, health checks, rollback, release channels, the hourly auto-updater, and pinning.</li>
+  <li><a href="spaces.html">Creating and removing chat spaces</a> — <code>add-instance</code> and <code>remove</code> by hand; the control daemon, the cloud provisioner, quotas, and the reaper.</li>
+  <li><a href="hibernation.html">Hibernation</a> — how an idle space&rsquo;s process exits and its data parks in object storage, and how a request (or a schedule) wakes it again.</li>
+  <li><a href="mesh.html">The mesh</a> — how several boxes share one fleet: heartbeats, placement by hashing, proxying, and draining a box.</li>
+  <li><a href="operations.html">Day-to-day operations</a> — the runbook: checking what is running, reading logs, health checks, backups and restore, migrating an instance between boxes.</li>
+  <li><a href="reference.html">Complete reference</a> — every command with every flag, every environment variable, every file path, every systemd unit, and the glossary.</li>
+</ol>
+
+<h2 id="conventions">Conventions used throughout</h2>
+<ul>
+  <li><strong>Command blocks say where to run them.</strong> Every terminal example carries a label such as &ldquo;Run on the box, as root&rdquo; or &ldquo;Run on your own machine&rdquo;. Lines beginning with <code>#</code> inside a block are explanatory comments, not commands.</li>
+  <li><strong>Placeholders are angle-bracketed.</strong> <code>&lt;host&gt;</code> always means an instance&rsquo;s full domain name, such as <code>chat-a.example.com</code>. <code>&lt;ver&gt;</code> means a build version identifier (a short git commit hash). Replace them, brackets and all.</li>
+  <li><strong>Example names are consistent.</strong> The guide uses <code>chat-a.example.com</code> as its running example instance and <code>box-1</code> / <code>box-2</code> as example servers, so you can follow the same imaginary fleet across pages.</li>
+  <li><strong>&ldquo;In plain words&rdquo; panels restate the essential idea</strong> of a section without any terminology, on purpose, so you can check your understanding as you go.</li>
+  <li><strong>&ldquo;Why it is this way&rdquo; panels explain a design decision</strong> where knowing the reason makes the behaviour easier to remember.</li>
+</ul>
+
+</div>
+</main>
+</div>
+</body>
+</html>

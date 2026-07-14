@@ -1,0 +1,159 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>The router — Running the fleet</title>
+<link rel="stylesheet" href="guide.css" />
+<script src="guide.js" defer></script>
+</head>
+<body data-page="router.html">
+<div class="frame">
+<nav class="side"></nav>
+<main class="content">
+<div class="wrap">
+
+<header class="top">
+  <p class="eyebrow"><span class="robot">&#129302;</span> Running the fleet &middot; Part 02 of 09</p>
+  <h1>The router: the front door of every box</h1>
+  <p class="thesis">Exactly one process on each box listens on the public internet. It terminates TLS, looks each request&rsquo;s hostname up in a small database, and forwards the request to the right local process over a unix socket. <strong>Everything else on the box hides behind it.</strong></p>
+</header>
+
+<div class="sysmap" data-highlight="router"></div>
+<p class="sysmap-caption">You are here: the router is the single public-facing process on a box. The hibernation activator (<a href="hibernation.html">part 06</a>) and the mesh (<a href="mesh.html">part 07</a>) both live inside this same process, switched on by configuration.</p>
+
+<h2 id="what-it-is">What the router is and why it exists</h2>
+<p>A box hosts many chat space instances, plus a few supporting services. Each of those is its own process, and none of them listens on a public network port — every one of them listens on a <strong>unix socket</strong>, which is a special file (in this system, under <code>/run/lchat/</code>) that processes on the same machine can connect to like a network address. Unix sockets are invisible to the internet, which is the point: the only way traffic reaches an instance is through the router.</p>
+<p>The router is started by systemd as the service <code>lchat-router.service</code>, and it is the same single <code>lchat</code> binary as everything else, started with the <code>router</code> subcommand. Its full start command, exactly as the systemd unit runs it, is:</p>
+<figure class="cmd">
+<figcaption>What systemd runs (from /etc/systemd/system/lchat-router.service)</figcaption>
+<pre><code>/opt/lchat/lchat router --registry /data/registry.db --acme-cache /data/acme</code></pre>
+</figure>
+<p>The two arguments name the two files the router depends on: the <a href="#the-registry">registry</a> (its routing table) and the <a href="#tls">certificate cache</a> (its TLS material). The router has three jobs, taken in turn below:</p>
+<ol>
+  <li><strong>TLS:</strong> obtain and present the right certificate for every hostname it serves.</li>
+  <li><strong>Routing:</strong> map each request&rsquo;s hostname to the right unix socket and forward the request.</li>
+  <li><strong>Hosting the activator and the mesh:</strong> when configured, wake sleeping instances (<a href="hibernation.html">part 06</a>) and cooperate with peer boxes (<a href="mesh.html">part 07</a>). This page covers the first two; the other two have their own pages.</li>
+</ol>
+
+<div class="plain">
+  <span class="label">In plain words</span>
+  <p>Think of the box as an office building. The router is the reception desk: it is the only door to the street, it checks which company (hostname) a visitor is asking for, and it walks the visitor to the right office (unix socket). The offices have no street doors of their own.</p>
+</div>
+
+<h2 id="the-registry">The registry: the routing table on disk</h2>
+<p>The router&rsquo;s routing table lives in a small SQLite database, by default <code>/data/registry.db</code>, called <strong>the registry</strong> throughout this guide. It has one table, <code>routes</code>, with one row per hostname the box serves. The columns you will care about as an operator:</p>
+<div class="tablewrap">
+<table>
+  <tr><th>Column</th><th>Meaning</th></tr>
+  <tr><td><code>host</code></td><td>The full domain name, for example <code>chat-a.example.com</code>. This is the primary key.</td></tr>
+  <tr><td><code>kind</code></td><td><code>instance</code> for a messenger space the box lifecycle-manages, or <code>service</code> for a sibling service (the home server, the push relay, the cloud provisioner) that deploys on its own cadence.</td></tr>
+  <tr><td><code>socket</code></td><td>The unix socket the router forwards this host&rsquo;s traffic to, for example <code>/run/lchat/chat-a.example.com.sock</code>.</td></tr>
+  <tr><td><code>status</code></td><td><code>creating</code>, <code>ready</code>, or <code>failed</code>. Only <code>ready</code> rows are served; a <code>failed</code> row keeps its error message in <code>last_error</code>.</td></tr>
+  <tr><td><code>version</code> / <code>prev_version</code></td><td>Which build of the software this instance currently runs, and which it ran before — the basis for <a href="deploys.html#rollback">rollback</a>.</td></tr>
+  <tr><td><code>hibernate</code></td><td>Whether this host is managed by the <a href="hibernation.html">activator</a> (put to sleep when idle) instead of by systemd.</td></tr>
+  <tr><td><code>next_due</code></td><td>For a hibernating host: the time of its earliest scheduled delivery (for example a reminder), so the activator can wake it on time with no request. See <a href="hibernation.html#due-time-wakes">part 06</a>.</td></tr>
+  <tr><td><code>db_path</code>, <code>app_store_url</code>, <code>home_origin</code>, <code>push_relay_url</code>, <code>push_relay_token</code>, <code>home_region</code>, <code>provider</code></td><td>Per-instance configuration recorded at creation time. <code>home_region</code> and <code>provider</code> are written but not yet acted on — they are seams for future geographic and co-operative placement. <span class="status partial">partially built</span></td></tr>
+</table>
+</div>
+<p>You rarely edit the registry directly — the command-line tools (<code>lchat add-instance</code>, <code>lchat remove</code>, and so on) do it for you, and <code>lchat instances</code> prints it in a readable form. But it is useful to know that the whole routing state of a box is one ordinary SQLite file you can inspect:</p>
+<figure class="cmd">
+<figcaption>Run on the box — inspect the routing table directly (read-only)</figcaption>
+<pre><code>sqlite3 "file:/data/registry.db?mode=ro" "SELECT host, kind, status, version, hibernate FROM routes"
+<span class="out">chat-a.example.com|instance|ready|1b4bd808|0
+chat-b.example.com|instance|ready|1b4bd808|1
+home.example.com|service|ready||0</span></code></pre>
+</figure>
+
+<h3 id="reloading">How the router learns about changes</h3>
+<p>The router keeps the routing table in memory (swapped atomically, so a reload never drops an in-flight connection) and re-reads the registry in two ways:</p>
+<ul>
+  <li><strong>On a reload signal.</strong> <code>systemctl reload lchat-router</code> sends the process a HUP signal, and the unit&rsquo;s <code>ExecReload</code> line is exactly that. The provisioning commands (<code>add-instance</code>, <code>remove</code>, <code>hibernate</code>) trigger this themselves, so you rarely type it.</li>
+  <li><strong>On a two-second poll.</strong> The router also fingerprints the registry file every two seconds and reloads if it changed. This exists because a change made by another process (for example the control daemon) must be picked up even if nobody sends a signal.</li>
+</ul>
+
+<h2 id="tls">TLS certificates: automatic, two ways</h2>
+<p>The router obtains its certificates from <a href="reference.html#gloss-le">Let&rsquo;s Encrypt</a> automatically. There are two mechanisms, and they coexist:</p>
+<h3 id="http01">Per-host certificates, issued on first contact</h3>
+<p>By default the router uses the ACME <strong>HTTP-01</strong> method: when a browser first connects for a hostname the router has never served, the router asks Let&rsquo;s Encrypt for a certificate for exactly that hostname, answers the validation request Let&rsquo;s Encrypt makes to port 80, and receives a certificate within a few seconds. Certificates (and their private keys) are cached on disk in <code>/data/acme/</code> — one file per host — so this happens once per host, not once per connection.</p>
+<p>Crucially, the router will only request a certificate for a hostname that exists in the registry with a serveable status. This rule (the &ldquo;host policy&rdquo;) prevents strangers from pointing arbitrary DNS names at your box and burning through Let&rsquo;s Encrypt&rsquo;s rate limits on your behalf.</p>
+<h3 id="dns01">A wildcard certificate for a whole domain</h3>
+<p>Per-host issuance rides Let&rsquo;s Encrypt&rsquo;s rate limit of roughly fifty new certificates per registered domain per week — a hard ceiling on how fast new spaces can be created. So the router can additionally hold a <strong>wildcard</strong> certificate (<code>*.example.com</code>), obtained with the ACME <strong>DNS-01</strong> method, which covers every direct subdomain at once. Enable it by setting two variables in the router&rsquo;s environment file, <code>/data/router.env</code>, then restarting the router:</p>
+<figure class="cmd">
+<figcaption>Contents of /data/router.env (edit on the box, then: systemctl restart lchat-router)</figcaption>
+<pre><code>LCHAT_WILDCARD_DOMAINS=example.com
+LCHAT_DNSIMPLE_TOKEN=&lt;a DNSimple account API token that can edit the example.com zone&gt;</code></pre>
+</figure>
+<p>With this set, the router re-checks the wildcard certificate at startup and every twelve hours, renewing when it is missing or within thirty days of expiry. Issuance works by publishing a temporary DNS record (<code>_acme-challenge.example.com</code>) through the DNSimple API, which is why the token is needed. The certificate persists in the same <code>/data/acme/</code> cache as <code>wildcard-example.com.pem</code>. Hostnames on other domains, and the apex domain itself, keep using the per-host path — and if wildcard issuance ever fails, per-host issuance quietly keeps covering those hosts too, so a DNS-provider outage degrades gracefully instead of taking the box down.</p>
+<div class="warn">
+  <span class="label">Treat the certificate cache as secret material</span>
+  <p>The files in <code>/data/acme/</code> contain private keys. They are mode 0600 for a reason. Include the directory in backups (losing it only forces re-issuance, but re-issuance is rate-limited), and never copy it anywhere world-readable.</p>
+</div>
+<div class="roadmap">
+  <span class="label">Designed, not built: a shared certificate cache in S3</span>
+  <p>Today each box keeps its own certificate cache on its own disk, which is fine while each hostname is served by exactly one box. The day a <em>pool</em> of boxes must be able to answer for the same hostname, the cache needs to live somewhere they all can see — object storage. The configuration value for this, <code>LCHAT_CERT_CACHE=s3</code>, is already reserved in the code and deliberately <em>refuses to start</em>, so nobody can half-enable an unfinished mode. Until it exists, certificate issuance ties a hostname to one box. See also <a href="mesh.html#mesh-limits">the mesh&rsquo;s honest limits</a>.</p>
+</div>
+
+<h2 id="ports">What the router does on each port</h2>
+<div class="tablewrap">
+<table>
+  <tr><th>Port</th><th>Behaviour</th></tr>
+  <tr><td><strong>443 (HTTPS)</strong></td><td>Terminates TLS with the certificate for the requested hostname, then routes by hostname (below). WebSocket connections — which the chat clients hold open continuously — pass straight through.</td></tr>
+  <tr><td><strong>80 (HTTP)</strong></td><td>Answers Let&rsquo;s Encrypt validation requests (<code>/.well-known/acme-challenge/&hellip;</code>), and permanently redirects everything else to HTTPS.</td></tr>
+</table>
+</div>
+<p>These are the only two public ports on a box. The firewall guidance in <a href="operations.html#hardening">part 08</a> allows exactly 22 (SSH), 80, and 443 inbound, and nothing else.</p>
+
+<h2 id="routing">How a request is routed, step by step</h2>
+<ol>
+  <li>A request arrives for, say, <code>https://chat-a.example.com/api/version</code>. The router strips any port from the hostname and looks <code>chat-a.example.com</code> up in its in-memory copy of the registry.</li>
+  <li><strong>If the host is unknown</strong> (no <code>ready</code> row), the router answers 404 — or, if <code>LCHAT_FALLBACK_URL</code> is set in <code>/data/router.env</code>, redirects to that URL instead. The fallback pairs well with wildcard DNS: a mistyped or retired subdomain lands on your marketing site rather than an error page.</li>
+  <li><strong>If the host is a normal (systemd-managed) route</strong>, the router opens a connection to the row&rsquo;s unix socket and forwards the request, preserving the original hostname so the instance knows who it is.</li>
+  <li><strong>If the host is flagged for hibernation</strong>, the request is handed to the activator inside the router, which may need to wake the instance first — the whole story is <a href="hibernation.html">part 06</a>.</li>
+  <li><strong>If the box is in a mesh</strong> and the placement rule says another box owns this host, the request is forwarded to that box instead — <a href="mesh.html">part 07</a>.</li>
+</ol>
+
+<h3 id="restart-tolerance">Why deploys do not drop requests</h3>
+<p>When an instance restarts (during a <a href="deploys.html">deploy</a>), there is a brief moment when the old process has exited and the new one has not yet bound its socket. During that gap, the router&rsquo;s connection attempts fail — and the router responds by <strong>retrying the connection for up to thirteen seconds</strong> before giving up. Thirteen seconds comfortably exceeds an instance&rsquo;s shutdown drain (ten seconds) plus startup, so in practice a request arriving mid-deploy just waits a beat and then succeeds. This retry window is a load-bearing detail: it is what makes &ldquo;restart the instance&rdquo; a zero-downtime operation without any blue-green complexity.</p>
+<p>The router also quietly strips two internal headers from every request before forwarding it (<code>X-Lchat-Sidecar</code> and <code>X-Lchat-Mesh-Forwarded</code>), so no outside client can forge the markers that <a href="hibernation.html#sidecar-co-spawn">bot sidecars</a> and <a href="mesh.html#one-hop">mesh peers</a> use.</p>
+
+<h2 id="router-config">Configuring the router</h2>
+<p>The router reads optional configuration from <code>/data/router.env</code> (a plain <code>KEY=value</code> file; the unit declares it with a leading <code>-</code>, meaning the file may be absent). Everything it understands:</p>
+<div class="tablewrap">
+<table>
+  <tr><th>Variable</th><th>Default</th><th>Meaning</th></tr>
+  <tr><td><code>LCHAT_REGISTRY</code></td><td><code>/data/registry.db</code></td><td>Path to the registry database (also a <code>--registry</code> flag).</td></tr>
+  <tr><td><code>LCHAT_ACME_CACHE</code></td><td><code>/data/acme</code></td><td>Certificate cache directory (also <code>--acme-cache</code>).</td></tr>
+  <tr><td><code>LCHAT_HTTPS_ADDR</code> / <code>LCHAT_HTTP_ADDR</code></td><td><code>:443</code> / <code>:80</code></td><td>Listen addresses.</td></tr>
+  <tr><td><code>LCHAT_FALLBACK_URL</code></td><td>unset (404)</td><td>Where unknown hostnames are redirected.</td></tr>
+  <tr><td><code>LCHAT_WILDCARD_DOMAINS</code>, <code>LCHAT_DNSIMPLE_TOKEN</code></td><td>unset</td><td>Wildcard certificate issuance, described <a href="#dns01">above</a>.</td></tr>
+  <tr><td><code>LCHAT_HIBERNATE_BUCKET</code>, <code>LCHAT_HIBERNATE_REGION</code>, <code>LCHAT_HIBERNATE_PREFIX</code>, <code>LCHAT_HIBERNATE_IDLE</code></td><td>unset</td><td>The hibernation activator&rsquo;s master switch and tuning — explained fully in <a href="hibernation.html#activator-config">part 06</a>. Unset means the activator does not exist.</td></tr>
+  <tr><td><code>LCHAT_MESH_SELF</code>, <code>LCHAT_MESH_DOMAINS</code></td><td>unset</td><td>The mesh&rsquo;s master switch — explained fully in <a href="mesh.html#mesh-config">part 07</a>. Unset means zero mesh code runs.</td></tr>
+</table>
+</div>
+
+<h2 id="checking">Checking on the router</h2>
+<figure class="cmd">
+<figcaption>Run on the box — the three routine checks</figcaption>
+<pre><code># Is it running, and since when?
+systemctl status lchat-router
+
+# What has it logged recently? (-f follows live)
+journalctl -u lchat-router -n 100
+
+# Does it serve a known host end to end? (checks TLS, routing, and the instance)
+curl -s https://chat-a.example.com/api/version
+<span class="out">{"version":"a41c9f2","build":"1b4bd808"}</span></code></pre>
+</figure>
+<p>Because the activator runs inside the router, a hibernating fleet&rsquo;s wake/sleep log lines also appear in <code>journalctl -u lchat-router</code> — that journal is the single most informative log on the box. <a href="operations.html#reading-logs">Part 08</a> catalogues the log lines worth knowing.</p>
+
+<div class="why">
+  <span class="label">Why it is this way</span>
+  <p>The router is deliberately tiny and stateless: it holds no per-request state, its routing table is rebuilt from a file on disk, and systemd restarts it within a second if it crashes. It is a single point of failure for the box, but a much smaller and more stable one than any alternative — and every stateful, complicated thing (the instances) lives outside it in separate processes it merely connects to.</p>
+</div>
+
+</div>
+</main>
+</div>
+</body>
+</html>

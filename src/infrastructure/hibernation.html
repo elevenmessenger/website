@@ -1,0 +1,172 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Hibernation — Running the fleet</title>
+<link rel="stylesheet" href="guide.css" />
+<script src="guide.js" defer></script>
+</head>
+<body data-page="hibernation.html">
+<div class="frame">
+<nav class="side"></nav>
+<main class="content">
+<div class="wrap">
+
+<header class="top">
+  <p class="eyebrow"><span class="robot">&#129302;</span> Running the fleet &middot; Part 06 of 09</p>
+  <h1>Hibernation: how idle spaces sleep in object storage</h1>
+  <p class="thesis">A chat space with nobody talking does not deserve a running process. With hibernation enabled, an idle space&rsquo;s process <strong>exits</strong>, its database is <strong>parked in an S3 bucket</strong>, and the next request (or the next scheduled reminder) <strong>wakes it in a few seconds</strong>. This page explains the machinery — the activator, the lease, and the replication — and every command and configuration knob around it.</p>
+</header>
+
+<div class="sysmap" data-highlight="router bucket"></div>
+<p class="sysmap-caption">You are here: the activator lives <em>inside the router process</em>, and its durable state lives in the hibernation bucket. Nothing new runs on the box — hibernation is a behaviour of the router.</p>
+
+<h2 id="why-safe">Why parking chat data in a bucket is safe at all</h2>
+<p>This whole design is only possible because of the product&rsquo;s encryption rule: an instance&rsquo;s database contains end-to-end ciphertext plus routing metadata the server already sees, and never a usable decryption key. Copying that file into an object-storage bucket therefore changes nothing about who can read messages — nobody new can. The operational risk of hibernation is availability and consistency, not confidentiality, and the rest of this page is about how consistency is guaranteed.</p>
+
+<h2 id="activator-config">Enabling hibernation: one bucket variable, then one flag per host</h2>
+<p>Hibernation is enabled in two deliberately separate steps, so that turning the machinery on is fleet-safe and adopting it is gradual:</p>
+<h3 id="box-switch">Step one: give the router a bucket (per box)</h3>
+<p>The <strong>activator</strong> — the component that wakes and sleeps instances — is part of the router process, and it exists only when the router&rsquo;s environment names a bucket. In <code>/data/router.env</code>:</p>
+<figure class="cmd">
+<figcaption>Contents of /data/router.env (then: systemctl restart lchat-router)</figcaption>
+<pre><code>LCHAT_HIBERNATE_BUCKET=my-hibernation-bucket       # the master switch; unset = the activator does not exist
+LCHAT_HIBERNATE_REGION=eu-west-1                   # optional; the AWS default chain applies otherwise
+LCHAT_HIBERNATE_PREFIX=prod                        # optional key prefix inside the bucket
+LCHAT_HIBERNATE_IDLE=15m                           # optional idle window before sleep; default 15m</code></pre>
+</figure>
+<p>The router also needs AWS credentials able to read and write that bucket, supplied the standard AWS ways (environment variables in the same file, or an instance role). Setting the bucket alone changes <em>nothing</em> for any instance: it only makes the activator available.</p>
+<h3 id="host-switch">Step two: flip individual hosts (per host)</h3>
+<p>Each host opts in via the <code>hibernate</code> flag on its registry row, flipped by one command in each direction. This per-host granularity is what made the feature safe to prove in production: one canary space migrated first, everything else untouched.</p>
+<figure class="cmd">
+<figcaption>Run on the box, as root</figcaption>
+<pre><code>lchat hibernate chat-b.example.com --on      # hand the host to the activator
+lchat hibernate chat-b.example.com --off     # hand it back to systemd
+lchat instances                              # the HIBERNATE column shows who is activator-managed</code></pre>
+</figure>
+<p>What <code>--on</code> actually does, in order: fixes the ownership of the host&rsquo;s environment file (the activator reads it as the service user, whereas systemd read it as root — a real wake failed on exactly this before it was baked in); sets the registry flag; <strong>refuses to proceed if the box-wide backup replicator still tracks this database</strong> (two replicators on one database corrupt each other&rsquo;s state — re-run <code>deploy/fleet-backup.sh</code> to regenerate the backup configuration without this host, then retry); stops and disables the host&rsquo;s systemd unit (and its bot sidecar unit, if present); reloads the router; and finally makes one warm request so the host is immediately woken by the activator rather than left to the first member. The ordering means the host is never unserveable: requests arriving in the brief socket-dead gap ride the router&rsquo;s <a href="router.html#restart-tolerance">thirteen-second dial retry</a>.</p>
+<p><code>--off</code> is the mirror image: clear the flag, reload the router (which makes the activator checkpoint the space to the bucket, release its lock, and stop the child), <em>wait for the child to actually release the socket</em>, then re-enable the systemd unit and health-check it, then re-enable the sidecar unit. The wait matters — an instance refuses to start over a socket that still has a listener.</p>
+
+<h2 id="the-lease">The lease: one writer, enforced by the bucket itself</h2>
+<p>The central safety problem of hibernation is: <em>what guarantees that two processes never write the same space&rsquo;s database at once?</em> (Two boxes might both think they should wake a space; a wedged old process might still be running when a new one starts.) The answer is <strong>the lease</strong> — a small lock object in the bucket, at <code>&lt;prefix&gt;/&lt;host&gt;/lock.json</code>, acquired using S3&rsquo;s conditional writes (an operation that atomically fails if the object already exists). Whoever holds a space&rsquo;s lease is the one writer; everyone else fails loudly and immediately.</p>
+<ul>
+  <li>The lease has a <strong>fifteen-minute lifetime</strong> and its holder renews it roughly every <strong>five minutes</strong> (stretched from the original 30s/10s in #836: each renewal is one S3 Tier-1 PUT, and at the old cadence the lease heartbeat alone was ~70% of the fleet&rsquo;s entire S3 bill). A process that stops renewing — crashed, wedged, unplugged — loses the lease within about fifteen minutes, and a healthy process elsewhere can then claim it. <strong>That ~15 minutes is the <em>hard-crash</em> failover window of the design</strong>; every graceful path (sleep, deploy, shutdown) releases the lease explicitly and is unaffected.</li>
+  <li>A failed renewal is terminal on purpose: the holder <em>stands down</em> (checkpoints nothing further, stops serving) rather than retrying, because a retry could collide with a new holder that legitimately took over after expiry.</li>
+  <li>Restoring a database from the bucket happens only <em>while holding the lease</em>. Restoring outside it could resurrect a stale copy that shadows the true holder&rsquo;s newer state.</li>
+</ul>
+<p>Replication itself is performed by <a href="reference.html#gloss-litestream">Litestream</a> — a well-known tool that continuously streams SQLite changes to object storage — embedded <em>as a library</em> inside the router. The embedding is not an implementation detail but a hard-won correction: the Litestream command-line tool, run twice against one database, <em>silently</em> absorbs the second copy and orphans one side&rsquo;s writes with no error at all; only the library interface exposes the lease that turns a second writer into a loud, typed failure. The build chose the loud failure.</p>
+<div class="plain">
+  <span class="label">In plain words</span>
+  <p>Every sleeping space has a key hanging on a hook in the shared storage room, and the rule is absolute: you may only touch a space&rsquo;s data while you are holding its key, and the key dissolves in your hand if you stop checking in every few minutes. Two people can never hold it at once, and a collapsed keyholder drops it within a quarter of an hour.</p>
+</div>
+
+<h2 id="lifecycle">The life of a hibernating space</h2>
+<figure class="diagram">
+<svg viewBox="0 0 740 120" role="img" aria-label="State machine: asleep, then waking on a request, then awake, then stopping after idleness, then asleep again.">
+  <rect x="20" y="35" width="120" height="50" rx="8" fill="var(--diagram-box)" stroke="var(--rule)"></rect>
+  <text x="80" y="58" font-size="12" font-weight="600" text-anchor="middle">asleep</text>
+  <text x="80" y="74" font-size="9.5" fill="var(--muted)" text-anchor="middle">no process at all</text>
+  <rect x="210" y="35" width="120" height="50" rx="8" fill="var(--accent-soft)" stroke="var(--accent)"></rect>
+  <text x="270" y="58" font-size="12" font-weight="600" text-anchor="middle">waking</text>
+  <text x="270" y="74" font-size="9.5" fill="var(--muted)" text-anchor="middle">lease &middot; restore &middot; spawn</text>
+  <rect x="400" y="35" width="120" height="50" rx="8" fill="var(--diagram-box)" stroke="var(--rule)"></rect>
+  <text x="460" y="58" font-size="12" font-weight="600" text-anchor="middle">awake</text>
+  <text x="460" y="74" font-size="9.5" fill="var(--muted)" text-anchor="middle">serving; replicating</text>
+  <rect x="590" y="35" width="120" height="50" rx="8" fill="var(--diagram-box)" stroke="var(--rule)"></rect>
+  <text x="650" y="58" font-size="12" font-weight="600" text-anchor="middle">stopping</text>
+  <text x="650" y="74" font-size="9.5" fill="var(--muted)" text-anchor="middle">checkpoint &middot; release</text>
+  <line x1="140" y1="60" x2="210" y2="60" stroke="var(--muted)" stroke-width="1.2"></line>
+  <text x="175" y="52" font-size="9" fill="var(--muted)" text-anchor="middle">request</text>
+  <line x1="330" y1="60" x2="400" y2="60" stroke="var(--muted)" stroke-width="1.2"></line>
+  <line x1="520" y1="60" x2="590" y2="60" stroke="var(--muted)" stroke-width="1.2"></line>
+  <text x="555" y="52" font-size="9" fill="var(--muted)" text-anchor="middle">idle 15m</text>
+  <path d="M 650 85 C 650 110, 80 110, 80 85" fill="none" stroke="var(--muted)" stroke-width="1.2"></path>
+</svg>
+<figcaption>The four states. &ldquo;Asleep&rdquo; is literally the absence of any process or bookkeeping entry — a sleeping space costs only disk.</figcaption>
+</figure>
+<h3 id="wake">Waking: what happens when a request arrives for a sleeping space</h3>
+<ol>
+  <li>The router sees a request for a host flagged as hibernating with no live process, and hands it to the activator. Many simultaneous requests coalesce into <strong>one</strong> wake — the rest simply wait for it.</li>
+  <li>The activator <strong>claims the lease</strong> at <code>&lt;prefix&gt;/&lt;host&gt;/lock.json</code>. If another holder has it (for example, another box in a <a href="mesh.html">mesh</a>), the request is answered <code>503</code> with a <code>Retry-After</code> header — deliberately: &ldquo;sleeping spaces are slow to wake&rdquo; must degrade to a polite retry, never a conflict.</li>
+  <li>It <strong>restores the database from the bucket only if the local file is missing</strong>. A database already on disk is trusted as-is — on a single box, under the lease, the local copy can only be this box&rsquo;s own last checkpoint, so most wakes skip the download entirely. This is the &ldquo;warm cache&rdquo;, and it is why routine wakes are fast.</li>
+  <li>It <strong>starts the instance as a direct child process</strong> of the router — the same versioned binary its systemd unit would run (<code>/opt/lchat/live/&lt;host&gt;</code>), with the same environment file (<code>/data/&lt;host&gt;.env</code>) — and waits up to 30 seconds for the socket to answer.</li>
+  <li>It <strong>starts replication under the held lease</strong> — at the host&rsquo;s <a href="#replication-classes">replication class</a>&rsquo;s cadence: within about a second on the default <code>stream</code> class, every five minutes on <code>batched</code>, daily on <code>daily</code> — and finally spawns the bot sidecar if one is staged (<a href="#sidecar-co-spawn">below</a>). Then the waiting requests proceed.</li>
+</ol>
+<p>The entire wake has a five-minute budget; a queued request waits at most 30 seconds before giving up with a 503. A <em>failed</em> wake discards all bookkeeping so the next request retries from scratch — one bad wake never becomes a stuck host.</p>
+<h3 id="sleep">Sleeping: what happens when a space goes idle</h3>
+<p>A background sweep (every few seconds) puts an instance to sleep when it has had <strong>zero requests in flight for the whole idle window</strong> (default fifteen minutes, set by <code>LCHAT_HIBERNATE_IDLE</code>). Both conditions matter: an open WebSocket counts as an in-flight request for its entire life, so <em>a space with anyone connected never sleeps</em>, no matter how quiet the conversation. The stop sequence, in order:</p>
+<ol>
+  <li><strong>Stop the bot sidecar first</strong> (an orphaned sidecar trying to reconnect would immediately re-wake the space).</li>
+  <li><strong>Ask the instance for its next scheduled delivery</strong> (the earliest future message or reminder) and record it in the registry&rsquo;s <code>next_due</code> column — the hook for <a href="#due-time-wakes">scheduled wakes</a>.</li>
+  <li><strong>Terminate the child gracefully</strong> (its own drain is the final write), with a 20-second budget before a hard kill.</li>
+  <li><strong>Take the final checkpoint to the bucket and release the lease</strong>, each under its own time budget so a wedged upload can never strand the lease until it expires on its own.</li>
+  <li>Forget the entry. The local database file <strong>stays on disk as the warm cache</strong>; the bucket copy is the durable truth, guarded by the (now released) lease.</li>
+</ol>
+<h3 id="failure">Failure is just the wake path again</h3>
+<p>Every failure mode collapses into &ldquo;stand down; the next request re-wakes&rdquo;: a child that dies unexpectedly, a lease lost to a renewal failure, a checkpoint that errors. And an S3 outage while spaces are <em>awake</em> is survivable by design — the local SQLite file is authoritative while the lease is held, replication queues and drains when the bucket returns, and only <em>cold</em> wakes (no local file) actually require the bucket to answer.</p>
+
+<h2 id="replication-classes">Replication classes: the per-plan durability ladder</h2>
+<p>While a space is awake, how often its writes reach the bucket is a <strong>per-host class</strong> on the registry row (<code>routes.replication</code>), because the change-driven sync is the one S3 cost that scales with how busy a space is — pennies a year on a quiet space, potentially ~&euro;145/year on one that writes every second around the clock. Three rungs:</p>
+<div class="tablewrap">
+<table>
+  <tr><th>Class</th><th>Awake sync cadence</th><th>What a hard box crash can lose</th><th>Who gets it</th></tr>
+  <tr><td><code>stream</code> (default, and every pre-ladder host)</td><td>change-driven, ~1s</td><td>seconds</td><td>Business; operator-run hosts unless set otherwise</td></tr>
+  <tr><td><code>batched</code></td><td>at most every 5 minutes</td><td>minutes</td><td>Community &amp; Friends</td></tr>
+  <tr><td><code>daily</code></td><td>at wake, then at most every 24 hours</td><td>up to a day</td><td>Free and Family</td></tr>
+</table>
+</div>
+<p>Two invariants the class can never weaken, worth internalising before touching it: <strong>every graceful path still flushes in full</strong> — idle sleep, deploys, restarts and shutdowns all checkpoint the space to the bucket regardless of class — and therefore <strong>a sleeping space&rsquo;s parked copy is always exactly current</strong>. The class bounds only what a <em>sudden</em> box loss can take, and only from the current awake window. (Corollary: a space with a bot sidecar never sleeps, so on the <code>daily</code> rung its real cadence is the daily tick — the one profile where &ldquo;up to a day&rdquo; is the everyday exposure, not a rare worst case.)</p>
+<figure class="cmd">
+<figcaption>Run on the box, as root — the class applies at the host&rsquo;s next wake</figcaption>
+<pre><code>lchat replication chat-b.example.com            # read the current class
+lchat replication chat-b.example.com daily      # set it (stream | batched | daily) + reload the router
+lchat instances                                 # the REPLICATION column shows every host&rsquo;s rung
+lchat add-instance test-x.11ch.at --hibernate --replication daily   # born on a rung</code></pre>
+</figure>
+<p>On provisioned fleets the class is <strong>billing-driven, not hand-set</strong>: with <code>LCHAT_CLOUD_REPLICATION_CLASSES</code> configured on the cloud service (<code>free=daily,family=daily,community=batched,business=stream</code>), spaces are born on the free rung, Stripe webhook events move them on every upgrade or lapse, and the meter sweep reconciles drift — the same event-driven-plus-sweep shape as storage caps. controld records the class and reloads the router only on an actual change; nothing restarts, no sleeping space wakes, and an awake instance keeps its current cadence until it next sleeps. A misconfigured <em>paid</em> tier deliberately maps to <code>stream</code> — config typos fail toward durability, never away from what a member paid for. See <code>docs/cloud-provisioner.md</code> for the config and <code>docs/tier-economics.md</code> for the cost table behind the rungs.</p>
+
+<h2 id="due-time-wakes">Scheduled deliveries wake sleeping spaces on time</h2>
+<p>Spaces can hold scheduled events — a reminder due at 9:00, a message scheduled for tomorrow. A naive hibernation design would sleep through them. Instead, at sleep time the space reports its earliest pending delivery, the activator persists that timestamp in the registry (so it survives router restarts), and the same background sweep wakes any sleeping host whose time has arrived — no member request needed. Worst-case lateness is about one sweep interval (thirty seconds) plus a wake. Bot schedules created by members (&ldquo;send me a news summary every morning&rdquo;) live encrypted in the sidecar, which the server cannot read — so the sidecar itself reports its earliest scheduled run to the instance (one bare timestamp crosses; the schedule stays ciphertext), and the instance folds it into the same answer.</p>
+
+<h2 id="sidecar-co-spawn">Bot sidecars on hibernating spaces: co-spawned, and invisible to the idle clock</h2>
+<p>A persistent sidecar service would defeat hibernation twice over — its always-open WebSocket would hold the space awake forever, and if the space did sleep, the sidecar&rsquo;s reconnection attempts would wake it right back. So on a hibernating host the sidecar&rsquo;s systemd unit is disabled (the <code>hibernate --on</code> flip does this) and the activator <strong>co-spawns</strong> the sidecar as its own second child: started right after the instance turns healthy, terminated first at sleep. The sidecar exists exactly while its space is awake. Two details make the arrangement sound:</p>
+<ul>
+  <li>The sidecar marks every request it makes with a header (<code>X-Lchat-Sidecar</code>), and the activator makes that traffic <strong>activity-invisible</strong>: it earns no idle-clock credit while the space is awake and receives a 503 (never a wake) while it sleeps. Forging the marker is harmless — it only downgrades the forger&rsquo;s own requests, and the router strips the header from genuine outside traffic anyway.</li>
+  <li>If the co-spawned sidecar dies, the activator restarts it with capped exponential backoff; if it will not start at all, the space still serves — members before bots. The old Node-based reference sidecar does not send the marker and is therefore unsuitable for hibernating hosts; the Go sidecar (the default) is required there.</li>
+</ul>
+
+<h2 id="children">Observing hibernating spaces (they are not in systemctl)</h2>
+<p>This is the operational surprise worth internalising from this page: <strong>an awake hibernating instance has no systemd unit.</strong> It is a child process of the router. Your usual reflexes translate as follows:</p>
+<div class="tablewrap">
+<table>
+  <tr><th>Question</th><th>For a systemd-managed host</th><th>For a hibernating host</th></tr>
+  <tr><td>Is it running?</td><td><code>systemctl status lchat@&lt;host&gt;</code></td><td><code>ss -xlH | grep &lt;host&gt;</code> — a bound socket means awake; no socket means asleep (which is normal, not a fault)</td></tr>
+  <tr><td>Its logs?</td><td><code>journalctl -u lchat@&lt;host&gt;</code></td><td><code>journalctl -u lchat-router</code> — the child&rsquo;s output flows through the router&rsquo;s journal, alongside the activator&rsquo;s own wake/sleep/lease lines</td></tr>
+  <tr><td>Restart it?</td><td><code>systemctl restart lchat@&lt;host&gt;</code></td><td>Usually unnecessary — but any request wakes it, and <code>lchat hibernate &lt;host&gt; --off</code> then <code>--on</code> is the full reset</td></tr>
+  <tr><td>Change its configuration?</td><td>Edit <code>/data/&lt;host&gt;.env</code>, restart the unit</td><td>Edit the same file; it is re-read at the next wake automatically</td></tr>
+  <tr><td>Deploy a version to it?</td><td><code>lchat deploy &lt;host&gt; --version &lt;ver&gt;</code> (restart + health check)</td><td>Same command — but it only repoints the link; the new build runs at the next wake, with no health check, so keep <code>rollback</code> in mind</td></tr>
+</table>
+</div>
+<figure class="cmd">
+<figcaption>Run on the box — watching a wake happen</figcaption>
+<pre><code>journalctl -u lchat-router -f &amp;
+curl -s https://chat-b.example.com/api/version
+<span class="out">activator: chat-b.example.com waking (lease acquired)
+activator: chat-b.example.com restored: local db present, skipping restore
+activator: chat-b.example.com awake (2.1s)
+{"version":"a41c9f2","build":"1b4bd808"}</span></code></pre>
+</figure>
+
+<h2 id="hibernation-gotchas">The sharp edges, learned in production</h2>
+<ul>
+  <li><strong>Never let two replicators track one database.</strong> The box-wide fleet backup (<a href="operations.html#backups">part 08</a>) and the activator&rsquo;s embedded replication must divide the databases between them: the <code>hibernate --on</code> flip refuses while the backup configuration still lists the host, and the backup script skips hibernating hosts when regenerating. If you ever edit <code>/etc/litestream.yml</code> by hand, preserve that invariant — the failure mode is mutual corruption of replication state.</li>
+  <li><strong>Environment file ownership follows the reader.</strong> Systemd read <code>/data/&lt;host&gt;.env</code> as root; the activator reads it as the service user. The flip commands and <code>add-instance</code> fix ownership automatically now, but a hand-copied environment file with root-only permissions will fail its first wake with a permission error.</li>
+  <li><strong>The 503s are a feature.</strong> A lease conflict or a wake timeout answers <code>503 with Retry-After</code>. Clients treat it as &ldquo;try again in a moment&rdquo;, which is the honest truth. A burst of 503s on one host is worth investigating; scattered occasional ones during wakes are the design working.</li>
+</ul>
+
+</div>
+</main>
+</div>
+</body>
+</html>
