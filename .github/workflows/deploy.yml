@@ -21,6 +21,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
+        with:
+          # Build-only job — nothing pushes, and the Pages deploy uses OIDC,
+          # so the persisted git credential is never needed.
+          persist-credentials: false
       - uses: actions/setup-node@v6
         with:
           node-version: 24
