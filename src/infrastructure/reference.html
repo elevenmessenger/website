@@ -14,7 +14,7 @@
 <div class="wrap">
 
 <header class="top">
-  <p class="eyebrow"><span class="robot">&#129302;</span> Running the fleet &middot; Part 09 of 09</p>
+  <p class="eyebrow"><span class="robot">&#129302;</span> Running the fleet &middot; Part 10 of 10</p>
   <h1>Complete reference: commands, files, variables</h1>
   <p class="thesis">Everything in one place, for looking up rather than reading through: <strong>every operator command with its flags, every environment variable with its default, every file path, every systemd unit, and the glossary.</strong> Each entry links back to the page that explains it.</p>
 </header>
@@ -23,7 +23,7 @@
 <p class="sysmap-caption">The map one last time, unhighlighted. If a term below is unfamiliar, the <a href="#glossary">glossary</a> at the bottom of this page defines it.</p>
 
 <h2 id="commands">Command reference: the <code>lchat</code> control commands</h2>
-<p>All of these run on a box (over <code>ssh</code>), as root, invoking <code>/opt/lchat/lchat</code>. Common conventions: <code>&lt;host&gt;</code> is always a full domain name; flags may come before or after the host; most commands accept <code>--registry &lt;path&gt;</code> to point at a non-default registry (you will essentially never need it — the default is <code>/data/registry.db</code>).</p>
+<p>All of these run on a box (over <code>ssh</code>, which rides the WireGuard tunnel — <a href="operations.html#hardening">part 08</a>), as a named operator invoking <code>/opt/lchat/lchat</code> through the committed sudo allowlist (root SSH is for first bootstrap only). Common conventions: <code>&lt;host&gt;</code> is always a full domain name; flags may come before or after the host; most commands accept <code>--registry &lt;path&gt;</code> to point at a non-default registry (you will essentially never need it — the default is <code>/data/registry.db</code>).</p>
 
 <h3 id="cmd-lifecycle">Box and instance lifecycle</h3>
 <dl>
@@ -35,6 +35,8 @@
   <dd>Registers a <code>service</code>-kind route (home server, push relay, cloud provisioner, or any third-party backend) after verifying the socket answers. No unit is created and no version is tracked — the router only forwards. Explained in <a href="processes.html#sibling-services">part 03</a>.</dd>
   <dt><code>lchat add-bot &lt;host&gt; [--model &lt;model&gt;]</code></dt>
   <dd>Provisions the bot sidecar for an instance: mints one agent invite per identity, writes <code>/data/&lt;host&gt;-bot.env</code> and the session directory, and enables <code>lchat-bot@&lt;host&gt;</code> (on a hibernating host the unit is skipped; the activator co-spawns instead). Reads <code>ANTHROPIC_API_KEY</code> from the calling environment if AI behaviour is wanted. Explained in <a href="processes.html#bot-sidecars">part 03</a>.</dd>
+  <dt><code>lchat add-hooks &lt;host&gt;</code> <span class="status partial">built, not yet deployed</span></dt>
+  <dd>Provisions the webhook-ingest sidecar for an instance (incoming webhooks, issue #610): mints the service identity&rsquo;s agent invite, writes <code>/data/&lt;host&gt;-hooks.env</code> and the session directory, registers the <code>in.&lt;host&gt;</code> registry route (kind <code>hooks</code>) pointing at <code>/run/lchat/&lt;host&gt;-hooks.sock</code>, and enables <code>lchat-hooks@&lt;host&gt;</code>. Admins then create webhooks from the app&rsquo;s Webhooks panel. Design and trust model: <code>docs/webhooks.md</code>.</dd>
   <dt><code>lchat remove &lt;host&gt; [--stop]</code></dt>
   <dd>Deletes the host&rsquo;s registry row and reloads the router (traffic stops); with <code>--stop</code> also stops and disables the instance and sidecar units. <strong>Never touches data.</strong> Explained in <a href="spaces.html#removing">part 05</a>.</dd>
   <dt><code>lchat hibernate &lt;host&gt; --on | --off</code></dt>
@@ -109,6 +111,8 @@
   <tr><td><code>LCHAT_ADMIN_TOKEN</code></td><td>The instance&rsquo;s admin token. The database stores only its hash; <strong>this file is the only recoverable copy</strong>.</td></tr>
   <tr><td><code>LCHAT_APP_STORE_URL</code>, <code>LCHAT_HOME_ORIGIN</code>, <code>LCHAT_PUSH_RELAY_URL</code>, <code>LCHAT_PUSH_RELAY_TOKEN</code></td><td>Per-instance pointers to the app-store listing, the home server, and the push relay (with its per-instance bearer token).</td></tr>
   <tr><td><code>LCHAT_BLOB_QUOTA_BYTES</code></td><td>Attachment-storage cap for the space (written by the control daemon&rsquo;s quota endpoint; uploads beyond it are refused).</td></tr>
+  <tr><td><code>LCHAT_BLOB_S3_BUCKET</code> (+ <code>_PREFIX</code>, <code>_REGION</code>, <code>_ENDPOINT</code>, <code>_ACCESS_KEY</code>, <code>_SECRET_KEY</code>)</td><td>Attachment bytes in an S3-compatible object store. Set = new uploads land there, the on-disk dir keeps serving pre-flip blobs; unset = today&rsquo;s disk layout. Prefix defaults to the host; key pair falls back to the AWS default chain. <span class="status partial">built, not yet flipped</span></td></tr>
+  <tr><td><code>LCHAT_BLOB_S3_MIRROR_*</code> (same six)</td><td>A second copy on a second provider (federated blobs Phase A — <code>docs/federated-blob-storage.md</code>): an idempotent sweep mirrors every store-backed blob, reads chain primary&rarr;mirror&rarr;disk, deletes reap both, and an hourly audit spot-checks both stores against each blob&rsquo;s recorded sha256. Requires the primary. Changing the mirror <em>target</em> later: <code>UPDATE blobs SET mirrored_at=0</code> re-mirrors everything. <span class="status partial">built, not yet flipped</span></td></tr>
 </table>
 </div>
 
@@ -121,6 +125,7 @@
   <tr><td><code>LCHAT_CONTROL_HIBERNATE_CREATES</code></td><td>off</td><td><code>1</code> = every provisioner-created space is born hibernating. <a href="spaces.html#hibernating-creates">Part 05</a>.</td></tr>
   <tr><td><code>LCHAT_MAX_REGISTERED</code></td><td>0 (= 10 &times; max instances)</td><td>Row ceiling counting hibernating registrations.</td></tr>
   <tr><td><code>LCHAT_TRASH_KEEP_DAYS</code></td><td>0 (keep forever)</td><td>Age at which archived (deleted) spaces in <code>/data/trash</code> are purged.</td></tr>
+  <tr><td><code>LCHAT_CONTROL_HOME_ORIGIN</code></td><td>empty (compiled production default)</td><td>Default <code>LCHAT_HOME_ORIGIN</code> for provisioner creates that name none — set on non-production fleets so their spaces point at the right home server (backup nudges, the demo banner's live status read).</td></tr>
   <tr><td><code>LCHAT_CONTROL_SOCKET</code> / <code>LCHAT_CONTROL_TOKEN_FILE</code></td><td><code>/run/lchat/control.sock</code> / <code>/etc/lchat/control.token</code></td><td>Where it listens / the root-only bearer token gating it.</td></tr>
 </table>
 </div>
@@ -182,6 +187,7 @@
   <tr><td><code>lchat-router.service</code></td><td>The router (+ activator + mesh)</td><td><code>bootstrap</code></td><td><code>journalctl -u lchat-router</code></td></tr>
   <tr><td><code>lchat@&lt;host&gt;.service</code></td><td>One instance</td><td><code>add-instance</code></td><td><code>journalctl -u 'lchat@&lt;host&gt;'</code></td></tr>
   <tr><td><code>lchat-bot@&lt;host&gt;.service</code></td><td>One bot sidecar</td><td><code>add-bot</code></td><td><code>journalctl -u 'lchat-bot@&lt;host&gt;'</code></td></tr>
+  <tr><td><code>lchat-hooks@&lt;host&gt;.service</code></td><td>One webhook-ingest sidecar</td><td><code>add-hooks</code></td><td><code>journalctl -u 'lchat-hooks@&lt;host&gt;'</code></td></tr>
   <tr><td><code>lchat-home.service</code> / <code>lchat-push.service</code></td><td>Home server / push relay</td><td>manually, once</td><td><code>journalctl -u lchat-home</code> etc.</td></tr>
   <tr><td><code>lchat-control.service</code></td><td>Control daemon (root)</td><td>manually, once</td><td><code>journalctl -u lchat-control</code></td></tr>
   <tr><td><code>lchat-cloud.service</code></td><td>Cloud provisioner</td><td>manually, once</td><td><code>journalctl -u lchat-cloud</code></td></tr>

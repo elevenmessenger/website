@@ -24,7 +24,8 @@ const PAGES = [
   { file: "hibernation.html", num: "06", short: "Hibernation",            title: "Hibernation: how idle spaces sleep in object storage" },
   { file: "mesh.html",        num: "07", short: "The mesh",               title: "The mesh: running more than one box" },
   { file: "operations.html",  num: "08", short: "Day-to-day operations",  title: "Day-to-day operations and checks" },
-  { file: "reference.html",   num: "09", short: "Reference",              title: "Complete reference: commands, files, variables" },
+  { file: "dev.html",         num: "09", short: "The proving ground",     title: "The proving ground: the dev mesh" },
+  { file: "reference.html",   num: "10", short: "Reference",              title: "Complete reference: commands, files, variables" },
 ];
 
 function currentPage() {

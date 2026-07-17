@@ -14,7 +14,7 @@
 <div class="wrap">
 
 <header class="top">
-  <p class="eyebrow"><span class="robot">&#129302;</span> Running the fleet &middot; Part 02 of 09</p>
+  <p class="eyebrow"><span class="robot">&#129302;</span> Running the fleet &middot; Part 02 of 10</p>
   <h1>The router: the front door of every box</h1>
   <p class="thesis">Exactly one process on each box listens on the public internet. It terminates TLS, looks each request&rsquo;s hostname up in a small database, and forwards the request to the right local process over a unix socket. <strong>Everything else on the box hides behind it.</strong></p>
 </header>
@@ -102,7 +102,7 @@ LCHAT_DNSIMPLE_TOKEN=&lt;a DNSimple account API token that can edit the example.
   <tr><td><strong>80 (HTTP)</strong></td><td>Answers Let&rsquo;s Encrypt validation requests (<code>/.well-known/acme-challenge/&hellip;</code>), and permanently redirects everything else to HTTPS.</td></tr>
 </table>
 </div>
-<p>These are the only two public ports on a box. The firewall guidance in <a href="operations.html#hardening">part 08</a> allows exactly 22 (SSH), 80, and 443 inbound, and nothing else.</p>
+<p>These are the only two public <em>TCP</em> ports on a box. The firewall guidance in <a href="operations.html#hardening">part 08</a> allows exactly 80, 443, and the WireGuard port (51820, UDP) inbound, and nothing else — SSH is not publicly reachable at all; operators reach it only through the WireGuard tunnel, and WireGuard itself does not answer unauthenticated packets, so to a port scanner the box shows nothing but the web. <span class="status built">running today</span></p>
 
 <h2 id="routing">How a request is routed, step by step</h2>
 <ol>

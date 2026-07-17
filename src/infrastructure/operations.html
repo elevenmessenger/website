@@ -14,7 +14,7 @@
 <div class="wrap">
 
 <header class="top">
-  <p class="eyebrow"><span class="robot">&#129302;</span> Running the fleet &middot; Part 08 of 09</p>
+  <p class="eyebrow"><span class="robot">&#129302;</span> Running the fleet &middot; Part 08 of 10</p>
   <h1>Day-to-day operations and checks</h1>
   <p class="thesis">This page is the runbook: <strong>the checks worth doing routinely, the log lines worth knowing, backups and how to actually restore one, moving an instance between boxes, and a table of common problems with their diagnoses.</strong> Every procedure links back to the page that explains why it works.</p>
 </header>
@@ -30,10 +30,16 @@ systemctl list-units 'lchat*' --failed
 systemctl status lchat-router lchat-control lchat-litestream --no-pager | grep -E 'Active|since'
 
 # 2. Does the registry agree — is every intended host ready?
-lchat instances                       # look for STATUS=failed rows and read their last error
+lchat instances                       # STATUS=failed rows need their last error read; CANARY=canary rows are throwaway test hosts, safe to reset/remove
 
 # 3. Is the fleet current on its release channels, and whose canaries are pinned?
 lchat update status                   # AUTO=pinned rows are someone&rsquo;s live experiment — leave them be
+                                      # (a throwaway test host is also flagged: lchat add-instance --canary, or lchat canary &lt;host&gt; --on; shows as CANARY in lchat instances)
+
+# Reset a canary to a fresh first-run (the operator-clean wipe — no `rm` in /data):
+lchat reset &lt;host&gt; --yes             # CANARY-ONLY: refuses any instance not flagged (the data-safety gate).
+                                      # Stops the unit, archives its DB to /data/trash (recoverable; env/config kept),
+                                      # restarts fresh, and prints the onboarding link. A real instance can never be reset.
 
 # 4. Is disk comfortable? (disk, not memory, is the binding resource on these boxes)
 df -h /data
@@ -116,8 +122,9 @@ sqlite3 /tmp/chat-a-snapshot.db "PRAGMA integrity_check"
 
 <h2 id="hardening">The hardening checklist (one-time per box)</h2>
 <ul>
-  <li><strong>Firewall:</strong> allow inbound 22, 80, 443 only; default-deny the rest. Everything internal is unix sockets, so nothing else needs a port. (Add the allows <em>before</em> enabling the firewall, so you do not lock out your own SSH session.)</li>
-  <li><strong>SSH:</strong> key-only (<code>PasswordAuthentication no</code>).</li>
+  <li><strong>Firewall:</strong> allow inbound 80, 443, and the WireGuard port (51820, UDP) only; default-deny the rest. SSH gets no public allow — it is permitted only <em>on the WireGuard interface</em> (<code>ufw allow in on wg0 to any port 22 proto tcp</code>). Everything internal is unix sockets, so nothing else needs a port. (Add the allows <em>before</em> enabling the firewall, and verify the tunnel from outside before removing any public SSH rule, so you do not lock out your own session.) <span class="status built">running today</span></li>
+  <li><strong>SSH rides WireGuard:</strong> each operator is a peer on the box&rsquo;s <code>wg0</code> interface and connects to the box&rsquo;s tunnel address; the tunnel runs persistently on the operator&rsquo;s machine with an <code>ssh</code> configuration alias, so every existing command works unchanged. WireGuard does not answer unauthenticated packets, so the SSH port is invisible to scanners and brute-force noise drops to zero. Key-only remains in force (<code>PasswordAuthentication no</code>). The full recipe, including the break-glass path through the hosting provider&rsquo;s rescue console, is in <code>docs/instance-router.md</code> under Hardening. <span class="status built">running today</span></li>
+  <li><strong>Root SSH is bootstrap-only:</strong> the first root session bootstraps the box and creates named operator accounts (group <code>lchat-operators</code>), installs the committed sudo allowlist (<code>deploy/sudoers-operators</code> &rarr; <code>/etc/sudoers.d/lchat-operators</code>) and the <code>lchat-env-install</code> helper for placing secrets, then sets <code>PermitRootLogin no</code>. From then on operators are named users whose root capability is exactly the allowlist — anything new that needs root gets an allowlist line through a reviewed pull request, never a root shell. This is accident-proofing and attribution with a reviewable surface, not a hard security boundary (the allowlist can deploy binaries); the hard boundary is the WireGuard key. <span class="status built">running today</span></li>
   <li><strong>Automatic security updates</strong> for the operating system (<code>unattended-upgrades</code>) — the application updates itself (<a href="deploys.html#auto-updates">part 04</a>), but the kernel and OpenSSL do not.</li>
   <li><strong>Pin the box&rsquo;s own hostnames to loopback</strong> in <code>/etc/hosts</code>, so on-box clients (bot sidecars, calls to the push relay) reach the local router instead of the public internet — and disable any cloud-image behaviour that regenerates that file on boot. The subtle failure this prevents is described in <a href="processes.html#bot-sidecars">part 03</a>.</li>
   <li><strong>The unit files already sandbox every service</strong> (<a href="processes.html#security-model">part 03</a>) — nothing to do, but worth knowing when something cannot write where you expected: <code>ProtectSystem=strict</code> means the whole filesystem is read-only to services except <code>/data</code> and <code>/run/lchat</code>.</li>

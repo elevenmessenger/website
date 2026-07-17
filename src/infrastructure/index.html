@@ -14,7 +14,7 @@
 <div class="wrap">
 
 <header class="top">
-  <p class="eyebrow"><span class="robot">&#129302;</span> Running the fleet &middot; Part 01 of 09</p>
+  <p class="eyebrow"><span class="robot">&#129302;</span> Running the fleet &middot; Part 01 of 10</p>
   <h1>Overview and orientation</h1>
   <p class="thesis">This guide explains, from the ground up, how the Eleven Messenger fleet is deployed and operated: <strong>what runs where, how each piece is started and supervised, and exactly which commands you type</strong> to add, remove, inspect, update, and repair things.</p>
 </header>
@@ -66,7 +66,7 @@
   <tr><th>Invocation</th><th>Role</th><th>Explained in</th></tr>
   <tr><td><code>lchat router</code></td><td>The front door: TLS, routing, and (when configured) the hibernation activator and the mesh.</td><td><a href="router.html">Part 02</a>, <a href="hibernation.html">06</a>, <a href="mesh.html">07</a></td></tr>
   <tr><td><code>lchat --socket &hellip; --db &hellip;</code></td><td>One messenger instance (this is what each <code>lchat@&lt;host&gt;</code> unit runs).</td><td><a href="processes.html">Part 03</a></td></tr>
-  <tr><td><code>lchat add-instance</code>, <code>deploy</code>, <code>instances</code>, <code>hibernate</code>, &hellip;</td><td>The operator&rsquo;s command-line tools, run over <code>ssh</code> on the box.</td><td><a href="reference.html#commands">Part 09</a></td></tr>
+  <tr><td><code>lchat add-instance</code>, <code>deploy</code>, <code>instances</code>, <code>hibernate</code>, &hellip;</td><td>The operator&rsquo;s command-line tools, run over <code>ssh</code> on the box.</td><td><a href="reference.html#commands">Part 10</a></td></tr>
   <tr><td><code>lchat controld</code></td><td>The root-only local control daemon that creates and deletes instances on request.</td><td><a href="spaces.html">Part 05</a></td></tr>
   <tr><td><code>lchat cloud</code></td><td>The public, unprivileged self-serve provisioner (lets signed-in users create their own spaces).</td><td><a href="spaces.html">Part 05</a></td></tr>
   <tr><td><code>lchat update run</code></td><td>One pass of the auto-updater (normally fired hourly by a systemd timer).</td><td><a href="deploys.html">Part 04</a></td></tr>
@@ -123,6 +123,7 @@
   <li><a href="hibernation.html">Hibernation</a> — how an idle space&rsquo;s process exits and its data parks in object storage, and how a request (or a schedule) wakes it again.</li>
   <li><a href="mesh.html">The mesh</a> — how several boxes share one fleet: heartbeats, placement by hashing, proxying, and draining a box.</li>
   <li><a href="operations.html">Day-to-day operations</a> — the runbook: checking what is running, reading logs, health checks, backups and restore, migrating an instance between boxes.</li>
+  <li><a href="dev.html">The proving ground</a> — the dev mesh: a sealed-off, two-country practice fleet where every change is proven before it reaches production.</li>
   <li><a href="reference.html">Complete reference</a> — every command with every flag, every environment variable, every file path, every systemd unit, and the glossary.</li>
 </ol>
 

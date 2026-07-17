@@ -7,9 +7,10 @@ module.exports = function (eleventyConfig) {
   // CNAME tells GitHub Pages which custom domain to serve (elevenmessenger.com).
   eleventyConfig.addPassthroughCopy({ "src/CNAME": "CNAME" });
   // The planet-scale operations guide — mirrored from elevenmessenger/messenger
-  // (docs/planet-scale-guide/, the actual source) by that repo's
-  // .github/workflows/sync-guide-to-website.yml. Never edited here directly;
-  // passthrough because it's already plain static HTML/CSS/JS, not a template.
+  // (docs/planet-scale-guide/, the actual source) with that repo's
+  // tools/sync-guide-to-website.sh, then published by ./deploy.sh. Never edited
+  // here directly; passthrough because it is already plain static HTML/CSS/JS,
+  // not a template. (The old auto-sync Action is disabled — see README § Deploy.)
   eleventyConfig.addPassthroughCopy({ "src/infrastructure": "infrastructure" });
 
   return {

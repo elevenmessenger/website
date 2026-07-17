@@ -31,5 +31,29 @@ npm run build   # build to ./_site
 
 ## Deploy
 
-Every push to `main` triggers `.github/workflows/deploy.yml`, which builds the
-site and publishes it to GitHub Pages at **elevenmessenger.com**.
+The site is built **locally** and published to the `gh-pages` branch, which
+GitHub Pages serves directly (Pages "deploy from a branch" — **no GitHub
+Actions**). From a clean checkout on `main`:
+
+```sh
+./deploy.sh
+```
+
+That runs `npx @11ty/eleventy` (→ `_site`, with `src/CNAME` and
+`src/infrastructure/` passed through), adds `.nojekyll`, and force-pushes the
+built output to `gh-pages`. The custom domain and HTTPS persist because `CNAME`
+rides in the build. Live within about a minute.
+
+Notes:
+
+- `main` holds the **source**; `gh-pages` holds the **built output** and is
+  overwritten by `deploy.sh` each time — never edit it by hand.
+- The planet-scale guide under `src/infrastructure/` is mirrored from
+  [`elevenmessenger/messenger`](https://github.com/elevenmessenger/messenger)
+  (`docs/planet-scale-guide/`, the real source). Refresh it before deploying
+  with that repo's `tools/sync-guide-to-website.sh <this-checkout>`, commit the
+  change to `main`, then run `./deploy.sh`.
+- Why local instead of an Actions workflow: the old `deploy.yml` (and the
+  messenger repo's guide-sync workflow) are **disabled** — building locally
+  removes the dependency on GitHub Actions entirely. `deploy.yml` is kept in the
+  tree, disabled, as the record of the previous approach.

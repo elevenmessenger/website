@@ -16,14 +16,14 @@
 <header class="top">
   <p class="eyebrow"><span class="robot">&#129302;</span> Running the fleet &middot; About this guide</p>
   <h1>Maintaining this guide</h1>
-  <p class="thesis">The guide is nine plain HTML pages, one shared stylesheet, and one shared script — <strong>no build step, no dependencies, nothing to install</strong>. Open any page in a browser straight from the repository, or serve the directory statically. This page explains how to keep it accurate and how to extend it.</p>
+  <p class="thesis">The guide is ten plain HTML pages, one shared stylesheet, and one shared script — <strong>no build step, no dependencies, nothing to install</strong>. Open any page in a browser straight from the repository, or serve the directory statically. This page explains how to keep it accurate and how to extend it.</p>
 </header>
 
 <h2 id="layout">How the directory is put together</h2>
 <div class="tablewrap">
 <table>
   <tr><th>File</th><th>Role</th></tr>
-  <tr><td><code>index.html</code> &hellip; <code>reference.html</code></td><td>The nine content pages. Each is self-contained semantic HTML; nothing is generated.</td></tr>
+  <tr><td><code>index.html</code> &hellip; <code>reference.html</code></td><td>The ten content pages. Each is self-contained semantic HTML; nothing is generated.</td></tr>
   <tr><td><code>guide.css</code></td><td>The single stylesheet. Colors, typography, panels, badges, tables, diagrams — edit here and every page follows. Light and dark themes are both defined at the top.</td></tr>
   <tr><td><code>guide.js</code></td><td>The single script, and the guide&rsquo;s one source of structure: the <code>PAGES</code> list (which drives the sidebar and the previous/next links on every page) and the shared &ldquo;you are here&rdquo; system-map diagram. All injected markup is built from static in-code strings only, per the repository rule about <code>innerHTML</code>.</td></tr>
   <tr><td><code>README.html</code></td><td>This page.</td></tr>

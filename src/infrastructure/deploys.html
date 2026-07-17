@@ -14,7 +14,7 @@
 <div class="wrap">
 
 <header class="top">
-  <p class="eyebrow"><span class="robot">&#129302;</span> Running the fleet &middot; Part 04 of 09</p>
+  <p class="eyebrow"><span class="robot">&#129302;</span> Running the fleet &middot; Part 04 of 10</p>
   <h1>Installing and updating the software</h1>
   <p class="thesis">Every instance on a box can run a <strong>different version</strong> of the software at the same time. This page explains the machinery that makes that true — the version store and the per-instance symbolic link — and then the three ways software changes: <strong>a manual staged deploy, an automatic hourly update, and rollback.</strong></p>
 </header>
@@ -82,8 +82,8 @@
   <li><p class="step-title">Copy the binary to the box and stage it into the version store.</p>
   <figure class="cmd">
   <figcaption>Run on your own machine</figcaption>
-  <pre><code>scp lchat-linux-amd64 root@box-1:/opt/lchat/incoming
-ssh root@box-1 /opt/lchat/lchat stage --file /opt/lchat/incoming
+  <pre><code>scp lchat-linux-amd64 box-1:/opt/lchat/incoming
+ssh box-1 sudo /opt/lchat/lchat stage --file /opt/lchat/incoming
 <span class="out">staged 4f0a2d19</span></code></pre>
   </figure>
   <p><code>stage</code> asks the binary for its own build identifier and copies it to <code>/opt/lchat/versions/4f0a2d19/lchat</code>. Nothing is running it yet; staging is inert and always safe.</p></li>
@@ -138,7 +138,13 @@ test.example.com     stable   pinned   4f0a2d19  9c21e77e</span></code></pre>
 <p><code>lchat update run --dry-run</code> prints what a pass <em>would</em> do without doing it — useful before enabling anything new. Hibernating instances get updates too, by a quieter route: the updater reads their preferences straight from their on-disk database (read-only) and simply repoints their <code>live</code> link, so they come up on the new build at their next wake, with no health check (a bad build on a hibernator is recovered with <code>rollback</code>).</p>
 
 <h2 id="sibling-deploys">Deploying the sibling services and the control binary</h2>
-<p>The home server and push relay are <em>not</em> versioned instances — they show <code>-</code> in the version column and deploy the plain way: build the <code>home</code> or <code>push</code> binary, copy it over <code>/opt/lchat/home</code> or <code>/opt/lchat/push</code>, and <code>systemctl restart lchat-home</code> (or <code>lchat-push</code>). The control/router binary <code>/opt/lchat/lchat</code> itself is refreshed by copying the new build over it atomically (copy to a temporary name in the same directory, then rename) and restarting <code>lchat-router</code>; the auto-updater does not manage it.</p>
+<p>The home server and push relay are <em>not</em> versioned instances — they show <code>-</code> in the version column. <span class="badge live">running today</span> On a hardened box (root SSH bootstrap-only) they deploy through the same version store as everything else, via the allowlisted <code>install</code> verb:</p>
+<pre>scp ./home box-1:/opt/lchat/incoming/home-&lt;sha&gt;
+ssh box-1 sudo -n /opt/lchat/lchat stage --file /opt/lchat/incoming/home-&lt;sha&gt;   # prints &lt;ver&gt;
+ssh box-1 sudo -n /opt/lchat/lchat install home --version &lt;ver&gt;
+ssh box-1 sudo -n /usr/local/sbin/lchat-svc restart lchat-home</pre>
+<p><code>install</code> knows the sibling set (<code>home</code>, <code>push</code>, <code>connect</code>), backs the outgoing binary up beside itself as <code>&lt;name&gt;.prev-&lt;date&gt;</code> (the one-copy rollback), and deliberately does <em>not</em> restart the unit — the restart is the operator's visible act, so an install can be staged ahead of a maintenance window. The version store doesn't care what a binary <em>is</em>: <code>stage --file</code> records any build under its own version id, so sibling builds sit beside messenger builds. Extending the sibling set is a reviewed PR, never a box edit.</p>
+<p><span class="badge live">running today</span> The control/router binary <code>/opt/lchat/lchat</code> <strong>self-updates on the same hourly pass</strong>: after the instances, the updater installs its channel's head over its own path — same signed feed, same sha check, same bake window — keeping the outgoing build beside it as <code>lchat.prev-&lt;build&gt;</code> (the one-rename rollback). The channel is <code>LCHAT_CONTROL_CHANNEL</code> in <code>/data/update.env</code> (<code>stable</code> by default — the trust plane takes new builds last; <code>off</code> disables self-update). After a swap the pass restarts <code>lchat-control</code> and <code>lchat-cloud</code> (backend sockets, invisible to members) but <em>never</em> the router — its front door must not blip on a timer's schedule, so <code>lchat-router</code> keeps running the old build until an operator restarts it, and the pass says so in its log. This is also how root-less operator boxes stay current: the manual root <code>cp</code> this replaced stopped being possible when root SSH went bootstrap-only.</p>
 
 <h2 id="verifying">Verifying what is deployed where</h2>
 <figure class="cmd">
