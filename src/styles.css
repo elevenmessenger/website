@@ -181,6 +181,11 @@ main {
   color: var(--muted);
   margin: 0 0 2rem;
 }
+/* Stanza lede (home): each line is its own block, wrapping naturally on
+   narrow screens instead of forcing mid-sentence breaks. */
+.lede .ll {
+  display: block;
+}
 
 .cta {
   display: flex;
