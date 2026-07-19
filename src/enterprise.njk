@@ -428,7 +428,7 @@
         <button class="close" id="closeBtn" aria-label="Close">×</button>
         <h2 id="successTitle">Welcome to Eleven Enterprise Edition 🚀</h2>
         <p id="successSummary">Payment received (pretend).</p>
-        <p>Your download is starting: <span class="zip">eleven-enterprise-edition.zip</span></p>
+        <p id="zipLine">Your download is starting: <span class="zip">eleven-enterprise-edition.zip</span></p>
         <div class="dl-bar" aria-hidden="true"><div class="dl-fill" id="dlFill"></div></div>
         <p class="dl-label" id="dlLabel">Contacting the mothership…</p>
       </div>
@@ -625,14 +625,59 @@
       const summary = document.getElementById("successSummary");
       let partyOn = false;
 
-      document.getElementById("calcForm").addEventListener("submit", (e) => {
-        e.preventDefault();
+      // The till: the cloud service mints the Stripe Checkout Session
+      // (POST /api/enterprise/checkout, CORS-scoped to this origin). Until
+      // that endpoint is deployed — or when it's unreachable — the button
+      // falls back to the honest pretend celebration below.
+      const CHECKOUT_URL = "https://cloud.elevenmessenger.com/api/enterprise/checkout";
+      function pretendPurchase() {
         summary.textContent = "Payment received (pretend): " + money(total) +
           " — year one, early bird applied. Renewal is +11%.";
         overlay.classList.add("show");
         closeBtn.focus();
         fakeDownload();
         if (!reduceMotion) startParty();
+      }
+      document.getElementById("calcForm").addEventListener("submit", async (e) => {
+        e.preventDefault();
+        const raw = seats.value.trim();
+        const blessed = MAGIC.test(raw);
+        const n = blessed ? 1010 : Math.max(1, Math.floor(Number(raw) || 1));
+        buyBtn.disabled = true;
+        const label = buyBtn.textContent;
+        buyBtn.textContent = "Opening the till…";
+        let redirected = false;
+        try {
+          const resp = await fetch(CHECKOUT_URL, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ seats: n, intern: blessed, currency: cur.toLowerCase() }),
+          });
+          if (resp.ok) {
+            const data = await resp.json();
+            if (data && data.url) {
+              redirected = true;
+              location.href = data.url;
+              return;
+            }
+          } else if (resp.status === 400 || resp.status === 429) {
+            // A server-side no ("Sales will call you") renders inline where
+            // the seat hints live — never a floating toast.
+            const data = await resp.json().catch(() => null);
+            if (data && data.message) {
+              calcHint.textContent = data.message;
+              return;
+            }
+          }
+        } catch (err) {
+          // Network/CORS failure — fall through to the pretend celebration.
+        } finally {
+          if (!redirected) {
+            buyBtn.disabled = false;
+            buyBtn.textContent = label;
+          }
+        }
+        pretendPurchase();
       });
       function shutOverlay() {
         overlay.classList.remove("show");
@@ -739,6 +784,23 @@
           if (bits.length || (elapsed < 6500 && partyOn)) requestAnimationFrame(frame);
           else pctx.clearRect(0, 0, innerWidth, innerHeight);
         })(t0);
+      }
+
+      // Back from Stripe with a real payment: the same celebration, no
+      // pretending. (?paid=1 is set by the server's fixed success_url.)
+      if (new URLSearchParams(location.search).get("paid") === "1") {
+        summary.textContent = "Payment received. Genuinely. Welcome aboard. 🚀";
+        const zipLine = document.getElementById("zipLine");
+        zipLine.textContent = "";
+        const rel = document.createElement("a");
+        rel.href = "https://github.com/elevenmessenger/releases";
+        rel.textContent = "github.com/elevenmessenger/releases";
+        zipLine.append("Your binaries live at ", rel, ".");
+        dlFill.style.width = "100%";
+        dlLabel.textContent = "Invoice: in your email, magnificent.";
+        overlay.classList.add("show");
+        closeBtn.focus();
+        if (!reduceMotion) startParty();
       }
     </script>
   </body>
