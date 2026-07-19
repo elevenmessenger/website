@@ -789,20 +789,30 @@
       }
 
       // Back from Stripe with a real payment: the same celebration, no
-      // pretending. (?paid=1 is set by the server's fixed success_url.)
+      // pretending, and a real zip. (?paid=1 is the server's fixed
+      // success_url; the asset lives on the public releases repo under its
+      // own `enterprise` tag, clear of the auto-update feed.)
+      const ZIP_URL = "https://github.com/elevenmessenger/releases/releases/download/enterprise/eleven-enterprise-edition.zip";
       if (new URLSearchParams(location.search).get("paid") === "1") {
         summary.textContent = "Payment received. Genuinely. Welcome aboard. 🚀";
         const zipLine = document.getElementById("zipLine");
-        zipLine.textContent = "";
+        zipLine.textContent = "Your download is starting: ";
         const rel = document.createElement("a");
-        rel.href = "https://github.com/elevenmessenger/releases";
-        rel.textContent = "github.com/elevenmessenger/releases";
-        zipLine.append("Your binaries live at ", rel, ".");
+        rel.className = "zip";
+        rel.href = ZIP_URL;
+        rel.textContent = "eleven-enterprise-edition.zip";
+        zipLine.append(rel);
         dlFill.style.width = "100%";
         dlLabel.textContent = "Invoice: in your email, magnificent.";
         overlay.classList.add("show");
         closeBtn.focus();
         if (!reduceMotion) startParty();
+        const kick = document.createElement("a");
+        kick.href = ZIP_URL;
+        kick.download = "";
+        document.body.appendChild(kick);
+        kick.click();
+        kick.remove();
       }
     </script>
   </body>
