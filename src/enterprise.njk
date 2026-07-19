@@ -598,9 +598,23 @@
         recalc();
       });
 
-      // Auto-detect: US → USD (+ -ize), GB → GBP, everyone else → EUR.
-      const region = ((navigator.language || "").split("-")[1] || "").toUpperCase();
-      applyCurrency(region === "US" ? "USD" : region === "GB" ? "GBP" : "EUR");
+      // Auto-detect where the visitor is without geolocating anyone: a static
+      // page never sees the IP, and we would not hand it to a geo API. The
+      // browser's timezone is the honest signal (Europe/Dublin → EUR even on
+      // an en-US browser); language region is the fallback. USD also swaps
+      // the page's -ise spellings to -ize.
+      function detectCurrency() {
+        let tz = "";
+        try { tz = Intl.DateTimeFormat().resolvedOptions().timeZone || ""; } catch (e) {}
+        if (tz === "Europe/London" || tz === "Europe/Belfast") return "GBP";
+        if (tz.indexOf("Europe/") === 0) return "EUR";
+        if (tz.indexOf("America/") === 0) return "USD";
+        const region = ((navigator.language || "").split("-")[1] || "").toUpperCase();
+        if (region === "US") return "USD";
+        if (region === "GB") return "GBP";
+        return "EUR";
+      }
+      applyCurrency(detectCurrency());
 
       /* ---- the purchase of a lifetime ---- */
       const overlay = document.getElementById("overlay");
