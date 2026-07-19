@@ -417,9 +417,25 @@ a.audience .go {
   font-weight: 600;
   font-size: 0.95rem;
 }
-/* Tiered variant (home): one primary panel, two asides beneath it */
+/* Tiered variant (home): one primary panel spanning the row, three aside
+   cards beneath it. Columns are explicit — the spanning primary occupies
+   every auto-fit track, which blocks collapsing and leaves a ghost column. */
 .audiences-tiered {
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: repeat(3, 1fr);
+}
+@media (max-width: 56rem) {
+  .audiences-tiered {
+    grid-template-columns: 1fr 1fr;
+  }
+  /* The odd card out (Enterprise, the punchline) takes the full row. */
+  .audiences-tiered a.audience-aside:last-child {
+    grid-column: 1 / -1;
+  }
+}
+@media (max-width: 38rem) {
+  .audiences-tiered {
+    grid-template-columns: 1fr;
+  }
 }
 .audiences-tiered a.audience-primary {
   grid-column: 1 / -1;
@@ -435,9 +451,6 @@ a.audience .go {
   max-width: 46rem;
 }
 @media (max-width: 38rem) {
-  .audiences-tiered {
-    grid-template-columns: 1fr;
-  }
   .audiences-tiered a.audience-primary {
     padding: 1.4rem 1.5rem;
   }
