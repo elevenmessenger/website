@@ -417,6 +417,31 @@ a.audience .go {
   font-weight: 600;
   font-size: 0.95rem;
 }
+/* Tiered variant (home): one primary panel, two asides beneath it */
+.audiences-tiered {
+  grid-template-columns: 1fr 1fr;
+}
+.audiences-tiered a.audience-primary {
+  grid-column: 1 / -1;
+  gap: 0.5rem;
+  padding: 1.9rem 2rem;
+}
+.audiences-tiered a.audience-primary h3 {
+  font-size: 1.5rem;
+  letter-spacing: -0.01em;
+}
+.audiences-tiered a.audience-primary p {
+  font-size: 1.05rem;
+  max-width: 46rem;
+}
+@media (max-width: 38rem) {
+  .audiences-tiered {
+    grid-template-columns: 1fr;
+  }
+  .audiences-tiered a.audience-primary {
+    padding: 1.4rem 1.5rem;
+  }
+}
 
 /* ---- pricing ---- */
 .plans {
