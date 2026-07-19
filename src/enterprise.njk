@@ -1,0 +1,731 @@
+<!doctype html>
+<!-- These go to eleven. Enterprise ones go to 1,100,000. -->
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Eleven Enterprise Edition</title>
+    <meta name="description" content="Need more juice? Get Enterprise! Secure group chat for the whole org. Every drop of Eleven at a serious price for serious work. No more slacking!" />
+    <meta name="color-scheme" content="dark" />
+    <meta name="theme-color" content="#070a16" />
+    <link rel="icon" type="image/png" sizes="32x32" href="/assets/icon_32.png" />
+    <link rel="apple-touch-icon" href="/assets/icon_256.png" />
+    <meta property="og:title" content="Eleven Enterprise Edition" />
+    <meta property="og:description" content="Need more juice? Get Enterprise! Every drop of Eleven at a serious price for serious work. No more slacking!" />
+    <meta property="og:type" content="website" />
+    <style>
+      /* Committed single-theme: deep space. The galaxy does not do light mode. */
+      :root { color-scheme: dark; }
+      * { box-sizing: border-box; }
+      body {
+        margin: 0;
+        background: #070a16;
+        color: #e7e9f0;
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+          Helvetica, Arial, sans-serif;
+        font-size: 1.0625rem;
+        line-height: 1.65;
+        overflow-x: hidden;
+        -webkit-font-smoothing: antialiased;
+      }
+      #space {
+        position: fixed;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+        z-index: -1;
+      }
+      a { color: #7d8bff; }
+      a:focus-visible, button:focus-visible, input:focus-visible {
+        outline: 2px solid #7d8bff;
+        outline-offset: 3px;
+      }
+      .wrap { max-width: 66rem; margin: 0 auto; padding: 0 clamp(1.25rem, 4vw, 2.5rem); }
+
+      /* ---- hero ---- */
+      .hero {
+        text-align: center;
+        padding: clamp(3.5rem, 10vh, 6.5rem) 0 4rem;
+      }
+      .eyebrow {
+        font-size: 0.85rem;
+        font-weight: 650;
+        letter-spacing: 0.35em;
+        text-transform: uppercase;
+        color: #ddb96a;
+        margin: 0 0 1.4rem;
+      }
+      .hero h1 {
+        margin: 0;
+        font-size: clamp(2.9rem, 9vw, 6.2rem);
+        font-weight: 700;
+        line-height: 1.04;
+        letter-spacing: -0.03em;
+        text-wrap: balance;
+        background: linear-gradient(100deg, #ffffff 20%, #b9c2ff 55%, #8684f6 90%);
+        -webkit-background-clip: text;
+        background-clip: text;
+        color: transparent;
+      }
+      .hero .kicker {
+        margin: 1.6rem auto 0;
+        max-width: 38rem;
+        font-size: clamp(1.15rem, 2.4vw, 1.45rem);
+        color: #b8bfd4;
+        text-wrap: balance;
+      }
+      .hero .kicker strong { color: #e7e9f0; font-weight: 650; }
+      .hero-cta { margin-top: 2.6rem; }
+
+      .btn {
+        display: inline-block;
+        font: inherit;
+        font-weight: 650;
+        text-decoration: none;
+        border: 0;
+        border-radius: 999px;
+        cursor: pointer;
+      }
+      .btn-ghost {
+        color: #b9c2ff;
+        border: 1px solid rgba(125, 139, 255, 0.45);
+        background: transparent;
+        padding: 0.8rem 1.7rem;
+      }
+      .btn-ghost:hover { border-color: #7d8bff; color: #e7e9f0; }
+
+      /* ---- sections ---- */
+      section { padding: 5rem 0; }
+      section h2 {
+        margin: 0 0 0.6rem;
+        font-size: clamp(1.9rem, 4.5vw, 2.7rem);
+        font-weight: 700;
+        letter-spacing: -0.02em;
+        line-height: 1.1;
+        text-wrap: balance;
+      }
+      .section-sub { color: #9aa1b3; max-width: 44rem; margin: 0 0 2.4rem; }
+
+      /* ---- feature grid ---- */
+      .feat-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(17rem, 1fr));
+        gap: 0.9rem;
+      }
+      .feat {
+        background: rgba(29, 32, 45, 0.72);
+        border: 1px solid rgba(255, 255, 255, 0.09);
+        border-radius: 16px;
+        padding: 1.05rem 1.2rem;
+        backdrop-filter: blur(4px);
+      }
+      .feat h3 {
+        margin: 0 0 0.15rem;
+        font-size: 1.02rem;
+        font-weight: 650;
+        letter-spacing: -0.01em;
+        display: flex;
+        gap: 0.55rem;
+        align-items: baseline;
+      }
+      .feat h3 .tick { color: #58b97e; flex: none; }
+      .feat p { margin: 0; color: #9aa1b3; font-size: 0.9rem; line-height: 1.5; }
+
+      /* ---- pricing ---- */
+      .pricing { text-align: center; padding-top: 8rem; }
+      .price-hero {
+        margin: 2.5rem 0 0.2rem;
+        font-size: clamp(3rem, 11vw, 7rem);
+        font-weight: 700;
+        letter-spacing: -0.035em;
+        line-height: 1;
+        font-variant-numeric: tabular-nums;
+        background: linear-gradient(100deg, #ffe9b8 10%, #ddb96a 50%, #b98a2e 95%);
+        -webkit-background-clip: text;
+        background-clip: text;
+        color: transparent;
+      }
+      .price-caption { color: #9aa1b3; margin: 0.4rem 0 0; }
+      .price-caption strong { color: #e7e9f0; }
+      .cur-chips {
+        display: flex;
+        justify-content: center;
+        gap: 0.5rem;
+        margin: 1rem 0 0;
+      }
+      .cur-chip {
+        font: inherit;
+        font-size: 0.85rem;
+        font-weight: 650;
+        color: #9aa1b3;
+        background: rgba(29, 32, 45, 0.72);
+        border: 1px solid rgba(255, 255, 255, 0.14);
+        border-radius: 999px;
+        padding: 0.3rem 0.95rem;
+        cursor: pointer;
+      }
+      .cur-chip[aria-pressed="true"] {
+        background: #5666f0;
+        border-color: #5666f0;
+        color: #ffffff;
+      }
+      .cur-chip:not([aria-pressed="true"]):hover { border-color: #7d8bff; color: #e7e9f0; }
+      .early-bird {
+        margin: 0.9rem 0 0;
+        font-size: 0.95rem;
+        color: #58b97e;
+      }
+      .early-bird strong { font-weight: 700; }
+
+      .calc {
+        margin: 3rem auto 0;
+        max-width: 30rem;
+        background: rgba(29, 32, 45, 0.72);
+        border: 1px solid rgba(255, 255, 255, 0.09);
+        border-radius: 22px;
+        padding: 1.8rem 1.9rem 2rem;
+        text-align: left;
+        backdrop-filter: blur(4px);
+      }
+      .calc label {
+        display: block;
+        font-size: 0.85rem;
+        font-weight: 650;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: #9aa1b3;
+        margin-bottom: 0.5rem;
+      }
+      .calc input {
+        width: 100%;
+        font: inherit;
+        font-size: 1.5rem;
+        font-weight: 650;
+        font-variant-numeric: tabular-nums;
+        color: #e7e9f0;
+        background: #10131f;
+        border: 1px solid rgba(255, 255, 255, 0.14);
+        border-radius: 12px;
+        padding: 0.65rem 0.9rem;
+      }
+      .calc-hint {
+        margin: 0.55rem 0 0;
+        font-size: 0.85rem;
+        line-height: 1.5;
+        color: #767d92;
+        min-height: 1.3em;
+      }
+      .breakdown {
+        margin: 1.3rem 0 0;
+        padding: 0;
+        list-style: none;
+        font-size: 0.97rem;
+        color: #9aa1b3;
+      }
+      .breakdown li {
+        display: flex;
+        justify-content: space-between;
+        gap: 1rem;
+        padding: 0.35rem 0;
+      }
+      .breakdown .num { font-variant-numeric: tabular-nums; color: #cfd4e2; }
+      .breakdown .disc .num { color: #58b97e; }
+      .breakdown .total {
+        border-top: 1px solid rgba(255, 255, 255, 0.14);
+        margin-top: 0.45rem;
+        padding-top: 0.75rem;
+        font-weight: 700;
+        font-size: 1.15rem;
+        color: #e7e9f0;
+      }
+      .breakdown .total .num { color: #ffe9b8; }
+      .breakdown .total .num.blessed {
+        background: linear-gradient(100deg, #ffe9b8 10%, #ddb96a 45%, #ffe9b8 80%);
+        -webkit-background-clip: text;
+        background-clip: text;
+        color: transparent;
+        text-shadow: 0 0 22px rgba(221, 185, 106, 0.35);
+      }
+      .breakdown .renew {
+        display: block;
+        padding-top: 0.55rem;
+        font-size: 0.84rem;
+        color: #767d92;
+        font-variant-numeric: tabular-nums;
+      }
+
+      .buy {
+        display: block;
+        width: 100%;
+        margin-top: 1.5rem;
+        padding: 1.05rem 1.5rem;
+        font-size: 1.2rem;
+        color: #ffffff;
+        background: linear-gradient(120deg, #5666f0, #8684f6 60%, #a06df2);
+        box-shadow: 0 0 34px rgba(125, 139, 255, 0.45), 0 8px 26px rgba(0, 0, 0, 0.5);
+        transition: transform 140ms ease, box-shadow 140ms ease;
+      }
+      .buy:hover {
+        transform: translateY(-2px) scale(1.015);
+        box-shadow: 0 0 48px rgba(134, 132, 246, 0.65), 0 12px 30px rgba(0, 0, 0, 0.5);
+      }
+      .buy:active { transform: translateY(0) scale(0.99); }
+      .buy-fine { margin: 0.9rem 0 0; font-size: 0.85rem; color: #767d92; text-align: center; }
+
+      /* ---- success overlay ---- */
+      .overlay {
+        position: fixed;
+        inset: 0;
+        display: none;
+        align-items: center;
+        justify-content: center;
+        background: rgba(7, 10, 22, 0.82);
+        z-index: 50;
+        padding: 1.5rem;
+      }
+      .overlay.show { display: flex; }
+      .success {
+        position: relative;
+        max-width: 30rem;
+        width: 100%;
+        background: #141828;
+        border: 1px solid rgba(221, 185, 106, 0.5);
+        border-radius: 22px;
+        padding: 2.2rem 2.2rem 2rem;
+        text-align: center;
+        box-shadow: 0 0 80px rgba(134, 132, 246, 0.35);
+      }
+      .success h2 { margin: 0 0 0.6rem; font-size: 1.8rem; letter-spacing: -0.02em; }
+      .success p { margin: 0.5rem 0; color: #b8bfd4; font-size: 0.98rem; }
+      .success .zip { color: #ffe9b8; font-weight: 650; }
+      .dl-bar {
+        height: 10px;
+        margin: 1.3rem 0 0.4rem;
+        border-radius: 999px;
+        background: #0d101c;
+        overflow: hidden;
+      }
+      .dl-fill {
+        height: 100%;
+        width: 0%;
+        border-radius: 999px;
+        background: linear-gradient(90deg, #5666f0, #8684f6, #ddb96a);
+        transition: width 300ms linear;
+      }
+      .dl-label { font-size: 0.85rem; color: #767d92; font-variant-numeric: tabular-nums; }
+      .close {
+        position: absolute;
+        top: 0.8rem;
+        right: 0.9rem;
+        font: inherit;
+        font-size: 1.3rem;
+        line-height: 1;
+        color: #767d92;
+        background: none;
+        border: 0;
+        cursor: pointer;
+        padding: 0.3rem 0.5rem;
+      }
+      .close:hover { color: #e7e9f0; }
+
+      #party {
+        position: fixed;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+        z-index: 60;
+        pointer-events: none;
+      }
+
+      .foot {
+        text-align: center;
+        padding: 3rem 0 3.5rem;
+        color: #767d92;
+        font-size: 0.9rem;
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        .buy, .buy:hover { transition: none; transform: none; }
+        .dl-fill { transition: none; }
+      }
+    </style>
+  </head>
+  <body>
+    <canvas id="space" aria-hidden="true"></canvas>
+
+    <header class="hero wrap">
+      <p class="eyebrow">Eleven · Enterprise Edition</p>
+      <h1>Take Eleven to your&nbsp;Enterprise</h1>
+      <p class="kicker"><strong>Need more juice? Get Enterprise!</strong> Secure
+      group chat for the whole org. Every drop of Eleven at a serious price for
+      serious work. No more slacking!</p>
+      <p class="hero-cta"><a class="btn btn-ghost" href="#pricing">See enterprise pricing &darr;</a></p>
+    </header>
+
+    <section class="wrap" aria-label="Enterprise-grade features">
+      <h2>Enterprise-grade. Every box ticked.</h2>
+      <p class="section-sub">
+        Print this list and hand it to your CISO.
+      </p>
+      <div class="feat-grid">
+        <div class="feat"><h3><span class="tick">✓</span>On-prem install</h3><p>One ~18 MB binary, 1 GB of RAM, and 1 CPU core required per 1,000 people.</p></div>
+        <div class="feat"><h3><span class="tick">✓</span>Encryption in transit</h3><p>E2EE, SSL, TLS 1.3, ECDH P-256, AES-256-GCM, ECIES, RFC 6962</p></div>
+        <div class="feat"><h3><span class="tick">✓</span>Encryption at rest</h3><p>Data on the server stored as <span data-us="recognizable">recognisable</span> as a desiccated corpse.</p></div>
+        <div class="feat"><h3><span class="tick">✓</span>Encrypted on disk</h3><p>Without the keys, you can’t even read it if you wanted to.</p></div>
+        <div class="feat"><h3><span class="tick">✓</span>Zero-trust</h3><p>Really. Keys live on-device. Sysadmins only see cipher.</p></div>
+        <div class="feat"><h3><span class="tick">✓</span>SOC 2</h3><p>So secure you might need to upgrade your policies to conform with this.</p></div>
+        <div class="feat"><h3><span class="tick">✓</span>ISO 27001</h3><p>You’ll tell your auditor how this works and they literally won’t believe you. 😉</p></div>
+        <div class="feat"><h3><span class="tick">✓</span>OIDC</h3><p><span data-us="Centralize">Centralise</span> sign-in around the platforms you’re forced to use, or deploy your own.</p></div>
+        <div class="feat"><h3><span class="tick">✓</span>Multi-provider</h3><p>On-cloud, off-cloud, on-prem, server-room, Raspberry Pi. Deploy anywhere™.</p></div>
+        <div class="feat"><h3><span class="tick">✓</span>Multi-region</h3><p>US/EU is so June ’26. Deploy to your global locations easily, out of the box.</p></div>
+        <div class="feat"><h3><span class="tick">✓</span>Multi-platform</h3><p>Mobile and desktop web with PWA, native Mac, native iOS, Android and Windows coming soon.</p></div>
+        <div class="feat"><h3><span class="tick">✓</span>Multi-edge</h3><p>Global fleet is step one, low-latency to your local offices is step two. Finally you can cosplay even bigger companies without hiring them.</p></div>
+        <div class="feat"><h3><span class="tick">✓</span>Continuous backups</h3><p>Stream backups with 1–2s latency to resilient, durable S3-compatible object storage.</p></div>
+        <div class="feat"><h3><span class="tick">✓</span>Data sovereignty</h3><p>Per-instance geo-placement means you are the new monarch of your data, not another provider.</p></div>
+        <div class="feat"><h3><span class="tick">✓</span>Single Sign-On</h3><p>Single sign-on, no sign-on, consolidated sign-on, passkey-only sign-on, all the sign-ons.</p></div>
+        <div class="feat"><h3><span class="tick">✓</span>99.999% uptime SLA</h3><p>Feels like this one is actually achievable. It’s just a unix system, if you know that.</p></div>
+        <div class="feat"><h3><span class="tick">✓</span>Kubernetes-compatible</h3><p>Orchestrate all the control planes, or just use the lightweight companion tools we manifested to simplify everything.</p></div>
+        <div class="feat"><h3><span class="tick">✓</span>AI-aware but optional</h3><p>Finally the ROI you were looking for. Yes, there’s AI, but there’s nothing exciting about that.</p></div>
+        <div class="feat"><h3><span class="tick">✓</span>Containers</h3><p>Sort of. Like Docker if Docker was one file.</p></div>
+        <div class="feat"><h3><span class="tick">✓</span>Blockchain</h3><p>Bring the best and leave the rest. Proof of work to avoid spam, global append-only ledger to ease replication.</p></div>
+        <div class="feat"><h3><span class="tick">✓</span>Free Family Edition included</h3><p>Secure group chat for all your employees. A <span class="loc-money" data-n="5">€5</span>/y value.</p></div>
+      </div>
+    </section>
+
+    <section id="pricing" class="pricing wrap" aria-label="Enterprise pricing">
+      <h2>Pricing that means business</h2>
+      <p class="section-sub" style="margin-left:auto;margin-right:auto">
+        Because SaaS budgets don’t spend themselves.
+      </p>
+
+      <p class="price-hero" id="bigPrice" aria-label="1,100,000 per year">€0</p>
+      <p class="price-caption">per year, rising <strong>11% every year</strong> · plus <strong><span class="loc-money" data-n="11">€11</span> per seat</strong></p>
+      <div class="cur-chips" role="group" aria-label="Currency">
+        <button type="button" class="cur-chip" data-cur="EUR" aria-pressed="true">€ EUR</button>
+        <button type="button" class="cur-chip" data-cur="USD" aria-pressed="false">$ USD</button>
+        <button type="button" class="cur-chip" data-cur="GBP" aria-pressed="false">£ GBP</button>
+      </div>
+      <p class="early-bird">Only-for-you offer: <strong>11% off</strong> the base price — save <span id="offerAmt">€11²</span>.</p>
+
+      <form class="calc" id="calcForm">
+        <label for="seats">How many employees?</label>
+        <input id="seats" name="seats" type="number" inputmode="decimal" min="1" max="11000000" step="any" value="1010.09" />
+        <p class="calc-hint" id="calcHint" aria-live="polite"></p>
+        <ul class="breakdown">
+          <li><span>Enterprise Edition, annual</span><span class="num" id="baseAmt">€1,100,000</span></li>
+          <li><span id="seatLine">1,010.09 employees × €11</span><span class="num" id="seatTotal">€11,111</span></li>
+          <li class="disc"><span>Only-for-you offer</span><span class="num" id="discAmt">−€121,000</span></li>
+          <li class="total"><span>Due today · year 1</span><span class="num" id="grandTotal">€990,111</span></li>
+          <li class="renew" id="renewLine"></li>
+        </ul>
+        <button type="submit" class="buy" id="buyBtn">Buy Eleven Enterprise&ensp;→</button>
+        <p class="buy-fine">Billed annually, rising 11% a year, forever.</p>
+      </form>
+    </section>
+
+    <div class="overlay" id="overlay" role="dialog" aria-modal="true" aria-labelledby="successTitle">
+      <div class="success">
+        <button class="close" id="closeBtn" aria-label="Close">×</button>
+        <h2 id="successTitle">Welcome to Eleven Enterprise Edition 🚀</h2>
+        <p id="successSummary">Payment received (pretend).</p>
+        <p>Your download is starting: <span class="zip">eleven-enterprise-edition.zip</span></p>
+        <div class="dl-bar" aria-hidden="true"><div class="dl-fill" id="dlFill"></div></div>
+        <p class="dl-label" id="dlLabel">Contacting the mothership…</p>
+      </div>
+    </div>
+
+    <canvas id="party" aria-hidden="true"></canvas>
+
+    <p class="foot wrap"><a href="/">Back to Earth &rarr;</a></p>
+
+    <script>
+      const reduceMotion = matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+      /* ---- localisation: same numerals in every currency; the elevens are
+         load-bearing, so there are no exchange rates. USD also swaps the
+         page's -ise spellings for -ize. ---- */
+      const CURRENCIES = {
+        EUR: { sym: "€", locale: "en-IE" },
+        USD: { sym: "$", locale: "en-US" },
+        GBP: { sym: "£", locale: "en-GB" },
+      };
+      let cur = "EUR";
+      const money = (n) => CURRENCIES[cur].sym + n.toLocaleString(CURRENCIES[cur].locale);
+      // Remember each localisable word's British form before any swapping.
+      document.querySelectorAll("[data-us]").forEach((el) => {
+        el.dataset.gb = el.textContent;
+      });
+      function applyCurrency(next) {
+        cur = next;
+        document.documentElement.lang = cur === "USD" ? "en-US" : "en";
+        document.querySelectorAll(".cur-chip").forEach((b) =>
+          b.setAttribute("aria-pressed", String(b.dataset.cur === cur)));
+        document.querySelectorAll(".loc-money").forEach((el) => {
+          el.textContent = money(Number(el.dataset.n));
+        });
+        document.querySelectorAll("[data-us]").forEach((el) => {
+          el.textContent = cur === "USD" ? el.dataset.us : el.dataset.gb;
+        });
+        document.getElementById("baseAmt").textContent = money(TARGET);
+        document.getElementById("discAmt").textContent = "−" + money(DISCOUNT);
+        document.getElementById("offerAmt").textContent = CURRENCIES[cur].sym + "11²";
+        if (counted) bigPrice.textContent = money(TARGET);
+        bigPrice.setAttribute("aria-label", money(TARGET) + " per year");
+        recalc();
+      }
+      document.querySelectorAll(".cur-chip").forEach((b) =>
+        b.addEventListener("click", () => applyCurrency(b.dataset.cur)));
+
+      /* ---- starfield + nebula ---- */
+      const space = document.getElementById("space");
+      const sctx = space.getContext("2d");
+      let stars = [];
+      function seedSpace() {
+        space.width = innerWidth * devicePixelRatio;
+        space.height = innerHeight * devicePixelRatio;
+        sctx.setTransform(devicePixelRatio, 0, 0, devicePixelRatio, 0, 0);
+        stars = Array.from({ length: 220 }, () => ({
+          x: Math.random() * innerWidth,
+          y: Math.random() * innerHeight,
+          r: Math.random() * 1.4 + 0.3,
+          p: Math.random() * Math.PI * 2,
+          s: Math.random() * 1.6 + 0.4,
+        }));
+      }
+      function drawSpace(t) {
+        sctx.clearRect(0, 0, innerWidth, innerHeight);
+        const nebs = [
+          [innerWidth * 0.78, innerHeight * 0.22, innerWidth * 0.5, "rgba(134,132,246,0.14)"],
+          [innerWidth * 0.15, innerHeight * 0.75, innerWidth * 0.45, "rgba(86,102,240,0.10)"],
+          [innerWidth * 0.45, innerHeight * 0.05, innerWidth * 0.35, "rgba(221,185,106,0.05)"],
+        ];
+        for (const [x, y, r, c] of nebs) {
+          const g = sctx.createRadialGradient(x, y, 0, x, y, r);
+          g.addColorStop(0, c);
+          g.addColorStop(1, "transparent");
+          sctx.fillStyle = g;
+          sctx.fillRect(0, 0, innerWidth, innerHeight);
+        }
+        for (const st of stars) {
+          const tw = reduceMotion ? 0.75 : 0.55 + 0.45 * Math.sin(st.p + t * 0.001 * st.s);
+          sctx.globalAlpha = tw;
+          sctx.fillStyle = "#ffffff";
+          sctx.beginPath();
+          sctx.arc(st.x, st.y, st.r, 0, Math.PI * 2);
+          sctx.fill();
+        }
+        sctx.globalAlpha = 1;
+      }
+      seedSpace();
+      addEventListener("resize", () => { seedSpace(); drawSpace(0); });
+      if (reduceMotion) drawSpace(0);
+      else (function loop(t) { drawSpace(t); requestAnimationFrame(loop); })(0);
+
+      /* ---- the big number counts up on scroll ---- */
+      const bigPrice = document.getElementById("bigPrice");
+      const TARGET = 1100000;
+      let counted = false;
+      function countUp() {
+        if (counted) return;
+        counted = true;
+        if (reduceMotion) { bigPrice.textContent = money(TARGET); return; }
+        const t0 = performance.now(), dur = 1600;
+        (function tick(now) {
+          const k = Math.min(1, (now - t0) / dur);
+          const eased = 1 - Math.pow(1 - k, 4);
+          bigPrice.textContent = money(Math.round(TARGET * eased));
+          if (k < 1) requestAnimationFrame(tick);
+          else bigPrice.textContent = money(TARGET);
+        })(t0);
+      }
+      new IntersectionObserver((entries) => {
+        if (entries.some((e) => e.isIntersecting)) countUp();
+      }, { threshold: 0.6 }).observe(bigPrice);
+
+      /* ---- calculator ---- */
+      const seats = document.getElementById("seats");
+      const seatLine = document.getElementById("seatLine");
+      const seatTotal = document.getElementById("seatTotal");
+      const grandTotal = document.getElementById("grandTotal");
+      const calcHint = document.getElementById("calcHint");
+      const renewLine = document.getElementById("renewLine");
+      const DISCOUNT = 121000; // 11% of the base. 11² thousand. The elevens insist.
+      function updateRenew(subtotal) {
+        const y2 = Math.round(subtotal * 1.11);
+        const y11 = Math.round(subtotal * Math.pow(1.11, 10));
+        renewLine.textContent = "Renews at +11% every year — year 2: " + money(y2) +
+          " · year 11: " + money(y11) + ". The only-for-you offer does not renew.";
+      }
+      // The one blessed fraction: 1010.09 (canonically 1010 + 1/11 — the
+      // eleventh of an employee is the intern, and costs exactly €1).
+      const MAGIC = /^1010\.09(09)*$/;
+      let total = TARGET;
+      function recalc() {
+        const raw = seats.value.trim();
+        const val = Number(raw) || 1;
+        const blessed = MAGIC.test(raw);
+        const strayFraction = !blessed && raw.includes(".") && !Number.isInteger(val);
+        grandTotal.classList.toggle("blessed", blessed);
+        if (blessed) {
+          seatLine.textContent = "1,010.09 employees × " + money(11);
+          seatTotal.textContent = money(11111);
+          total = 1111111 - DISCOUNT;
+          grandTotal.textContent = money(total);
+          calcHint.textContent = "";
+          updateRenew(1111111);
+          return;
+        }
+        const n = Math.max(1, Math.floor(val));
+        const label = n === 1 ? "employee" : "employees";
+        seatLine.textContent = n.toLocaleString(CURRENCIES[cur].locale) + " " + label + " × " + money(11);
+        seatTotal.textContent = money(n * 11);
+        const subtotal = TARGET + n * 11;
+        total = subtotal - DISCOUNT;
+        grandTotal.textContent = money(total);
+        calcHint.textContent = strayFraction
+          ? "Whole employees only — the one fraction Eleven recognises is 1010.09. " +
+            "Anything else rounds to a person."
+          : "Whole employees only. One fraction is recognised: 1010.09. Ask your CFO.";
+        updateRenew(subtotal);
+      }
+      seats.addEventListener("input", recalc);
+      seats.addEventListener("change", () => {
+        const raw = seats.value.trim();
+        const val = Number(raw);
+        if (raw && !MAGIC.test(raw) && !Number.isInteger(val)) {
+          seats.value = String(Math.max(1, Math.round(val || 1)));
+        }
+        recalc();
+      });
+
+      // Auto-detect: US → USD (+ -ize), GB → GBP, everyone else → EUR.
+      const region = ((navigator.language || "").split("-")[1] || "").toUpperCase();
+      applyCurrency(region === "US" ? "USD" : region === "GB" ? "GBP" : "EUR");
+
+      /* ---- the purchase of a lifetime ---- */
+      const overlay = document.getElementById("overlay");
+      const buyBtn = document.getElementById("buyBtn");
+      const closeBtn = document.getElementById("closeBtn");
+      const dlFill = document.getElementById("dlFill");
+      const dlLabel = document.getElementById("dlLabel");
+      const summary = document.getElementById("successSummary");
+      let partyOn = false;
+
+      document.getElementById("calcForm").addEventListener("submit", (e) => {
+        e.preventDefault();
+        summary.textContent = "Payment received (pretend): " + money(total) +
+          " — year one, early bird applied. Renewal is +11%.";
+        overlay.classList.add("show");
+        closeBtn.focus();
+        fakeDownload();
+        if (!reduceMotion) startParty();
+      });
+      function shutOverlay() {
+        overlay.classList.remove("show");
+        partyOn = false;
+        buyBtn.focus();
+      }
+      closeBtn.addEventListener("click", shutOverlay);
+      overlay.addEventListener("click", (e) => { if (e.target === overlay) shutOverlay(); });
+      addEventListener("keydown", (e) => {
+        if (e.key === "Escape" && overlay.classList.contains("show")) shutOverlay();
+      });
+
+      function fakeDownload() {
+        dlFill.style.width = "0%";
+        const steps = [
+          [8, "Contacting the mothership…"],
+          [31, "Reserving your parking orbit…"],
+          [57, "Zipping the exact same binaries…"],
+          [83, "Applying enterprise-grade gold sticker…"],
+          [100, "eleven-enterprise-edition.zip — 41.3 MB — done. (Pretend. Checkout wiring comes next.)"],
+        ];
+        steps.forEach(([pct, label], i) => {
+          setTimeout(() => {
+            dlFill.style.width = pct + "%";
+            dlLabel.textContent = label;
+          }, 450 + i * 650);
+        });
+      }
+
+      /* ---- confetti · fireworks · rainbows · unicorns ---- */
+      const party = document.getElementById("party");
+      const pctx = party.getContext("2d");
+      const CONFETTI = ["#5666f0", "#8684f6", "#ddb96a", "#58b97e", "#ff7ab6", "#7de3ff"];
+      const EMOJI = ["🦄", "🌈", "🎆", "✨", "🎉"];
+      let bits = [];
+      function sizeParty() {
+        party.width = innerWidth * devicePixelRatio;
+        party.height = innerHeight * devicePixelRatio;
+        pctx.setTransform(devicePixelRatio, 0, 0, devicePixelRatio, 0, 0);
+      }
+      addEventListener("resize", sizeParty);
+      sizeParty();
+
+      function burst(x, y) {
+        const hue = CONFETTI[Math.floor(Math.random() * CONFETTI.length)];
+        for (let i = 0; i < 42; i++) {
+          const a = (Math.PI * 2 * i) / 42, v = 2.4 + Math.random() * 3.4;
+          bits.push({ kind: "spark", x, y, vx: Math.cos(a) * v, vy: Math.sin(a) * v,
+            life: 1, decay: 0.012 + Math.random() * 0.012, color: hue, r: 1.6 + Math.random() * 1.6 });
+        }
+      }
+      function rain() {
+        for (let i = 0; i < 5; i++) {
+          bits.push({ kind: "confetti", x: Math.random() * innerWidth, y: -12,
+            vx: (Math.random() - 0.5) * 1.4, vy: 1.6 + Math.random() * 2.4,
+            rot: Math.random() * Math.PI, vr: (Math.random() - 0.5) * 0.25,
+            life: 1, decay: 0.004, color: CONFETTI[Math.floor(Math.random() * CONFETTI.length)],
+            w: 5 + Math.random() * 6, h: 8 + Math.random() * 8 });
+        }
+        if (Math.random() < 0.3) {
+          bits.push({ kind: "emoji", x: Math.random() * innerWidth, y: -30,
+            vx: (Math.random() - 0.5) * 1.2, vy: 1.2 + Math.random() * 1.6,
+            rot: (Math.random() - 0.5) * 0.6, vr: (Math.random() - 0.5) * 0.06,
+            life: 1, decay: 0.003, glyph: EMOJI[Math.floor(Math.random() * EMOJI.length)],
+            size: 26 + Math.random() * 22 });
+        }
+      }
+      function startParty() {
+        if (partyOn) return;
+        partyOn = true;
+        bits = [];
+        const t0 = performance.now();
+        (function frame(now) {
+          pctx.clearRect(0, 0, innerWidth, innerHeight);
+          const elapsed = now - t0;
+          if (elapsed < 6500 && partyOn) {
+            rain();
+            if (Math.random() < 0.05)
+              burst(innerWidth * (0.15 + Math.random() * 0.7), innerHeight * (0.12 + Math.random() * 0.45));
+          }
+          bits = bits.filter((b) => b.life > 0 && b.y < innerHeight + 60);
+          for (const b of bits) {
+            b.x += b.vx; b.y += b.vy; b.life -= b.decay;
+            if (b.kind === "spark") {
+              b.vy += 0.05;
+              pctx.globalAlpha = Math.max(0, b.life);
+              pctx.fillStyle = b.color;
+              pctx.beginPath(); pctx.arc(b.x, b.y, b.r, 0, Math.PI * 2); pctx.fill();
+            } else if (b.kind === "confetti") {
+              b.rot += b.vr;
+              pctx.globalAlpha = Math.max(0, b.life);
+              pctx.save(); pctx.translate(b.x, b.y); pctx.rotate(b.rot);
+              pctx.fillStyle = b.color; pctx.fillRect(-b.w / 2, -b.h / 2, b.w, b.h); pctx.restore();
+            } else {
+              b.rot += b.vr;
+              pctx.globalAlpha = Math.max(0, b.life);
+              pctx.save(); pctx.translate(b.x, b.y); pctx.rotate(b.rot);
+              pctx.font = b.size + "px serif";
+              pctx.textAlign = "center"; pctx.textBaseline = "middle";
+              pctx.fillText(b.glyph, 0, 0); pctx.restore();
+            }
+          }
+          pctx.globalAlpha = 1;
+          if (bits.length || (elapsed < 6500 && partyOn)) requestAnimationFrame(frame);
+          else pctx.clearRect(0, 0, innerWidth, innerHeight);
+        })(t0);
+      }
+    </script>
+  </body>
+</html>
