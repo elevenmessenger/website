@@ -417,28 +417,15 @@ a.audience .go {
   font-weight: 600;
   font-size: 0.95rem;
 }
-/* Tiered variant (home): one primary panel spanning the row, three aside
-   cards beneath it. Columns are explicit — the spanning primary occupies
-   every auto-fit track, which blocks collapsing and leaves a ghost column. */
+/* Tiered variant (home): the primary panel with the punchline card riding
+   beside it, and the two remaining asides paired in a lower row beneath.
+   Columns are explicit — a spanning primary occupies every auto-fit track,
+   which blocks collapsing and leaves ghost columns. */
 .audiences-tiered {
-  grid-template-columns: repeat(3, 1fr);
-}
-@media (max-width: 56rem) {
-  .audiences-tiered {
-    grid-template-columns: 1fr 1fr;
-  }
-  /* The odd card out (Enterprise, the punchline) takes the full row. */
-  .audiences-tiered a.audience-aside:last-child {
-    grid-column: 1 / -1;
-  }
-}
-@media (max-width: 38rem) {
-  .audiences-tiered {
-    grid-template-columns: 1fr;
-  }
+  grid-template-columns: repeat(6, 1fr);
 }
 .audiences-tiered a.audience-primary {
-  grid-column: 1 / -1;
+  grid-column: span 4;
   gap: 0.5rem;
   padding: 1.9rem 2rem;
 }
@@ -450,7 +437,28 @@ a.audience .go {
   font-size: 1.05rem;
   max-width: 46rem;
 }
+.audiences-tiered a.audience-aside {
+  grid-column: span 3;
+}
+/* The punchline (Enterprise) sits shotgun beside the primary. */
+.audiences-tiered a.audience-primary + a.audience-aside {
+  grid-column: span 2;
+}
+@media (max-width: 56rem) {
+  .audiences-tiered {
+    grid-template-columns: 1fr 1fr;
+  }
+  /* Same shape, evened out: primary + punchline up top, the pair below. */
+  .audiences-tiered a.audience-primary,
+  .audiences-tiered a.audience-aside,
+  .audiences-tiered a.audience-primary + a.audience-aside {
+    grid-column: auto;
+  }
+}
 @media (max-width: 38rem) {
+  .audiences-tiered {
+    grid-template-columns: 1fr;
+  }
   .audiences-tiered a.audience-primary {
     padding: 1.4rem 1.5rem;
   }
