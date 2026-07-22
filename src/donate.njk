@@ -1,0 +1,112 @@
+---
+layout: base.njk
+title: Donate
+htmlTitle: Donate · Eleven
+description: Eleven has no funding — no investors, no ads, no growth targets. If you back what it stands for, a donation goes straight into the 11 factor principles and distributing affordable, top-tier software.
+permalink: /donate/
+---
+
+<!-- 🤖 -->
+<section class="prose">
+  <h1>Support Eleven</h1>
+
+  <p id="thanks" hidden>
+    <strong>Thank you.</strong> Your donation landed and it means a lot —
+    it goes straight to work. That&rsquo;s the whole ceremony; there is no
+    mailing list.
+  </p>
+
+  <h2>There&rsquo;s no funding</h2>
+  <p>
+    Eleven has no investors, no ad money, and no growth targets. It&rsquo;s
+    essentially a project in defiance of big tech and of over-complexity in
+    software distribution — proof that a small team can build top-tier,
+    secure software and hand it to people simply: one link, one binary, no
+    tracking, no dark patterns.
+  </p>
+  <p>
+    If you support those ideas, you can back them directly. We&rsquo;ll
+    plough every donation into the
+    <a href="https://11factor.org">11&nbsp;factor principles</a> and the
+    goal of distributing affordable, top-tier software.
+  </p>
+
+  <h2>The honest fine print</h2>
+  <p>
+    Eleven is a company, not a charity — a donation buys nothing, promises
+    nothing, and isn&rsquo;t tax-deductible. Spaces stay priced so that
+    nobody has to donate for the product to survive; this is only for
+    people who want the ideas to go faster.
+  </p>
+
+  <h2>Donate</h2>
+  <div class="donate-row">
+    <button class="btn btn-ghost donate-amt" data-minor="1100">€11</button>
+    <button class="btn btn-ghost donate-amt" data-minor="11000">€110</button>
+    <button class="btn btn-ghost donate-amt" data-minor="110000">€1,100</button>
+  </div>
+  <form id="donate-custom" class="donate-custom">
+    <label for="donate-amount">Or pick your own amount</label>
+    <div class="donate-row">
+      <select id="donate-cur" aria-label="Currency">
+        <option value="eur" selected>€ EUR</option>
+        <option value="usd">$ USD</option>
+        <option value="gbp">£ GBP</option>
+      </select>
+      <input id="donate-amount" type="number" min="1.10" step="0.01" placeholder="11.00"
+             inputmode="decimal" aria-describedby="donate-note" />
+      <button class="btn btn-primary" type="submit">Donate</button>
+    </div>
+  </form>
+  <p class="fine" id="donate-note">
+    Pay what you want, from €1.10 (below that the card fee eats the gift).
+    Payment runs on Stripe&rsquo;s hosted page; we never see your card.
+  </p>
+  <p class="fine" id="donate-error" role="alert" hidden></p>
+</section>
+
+<style>
+  .donate-row { display: flex; gap: 0.6rem; flex-wrap: wrap; align-items: center; }
+  .donate-custom { margin-top: 1rem; }
+  .donate-custom label { display: block; margin-bottom: 0.4rem; }
+  .donate-custom input { width: 8.5rem; }
+</style>
+
+<script type="module">
+  // 🤖 Same shape as the Enterprise page: the static site has no backend, so
+  // checkout mints on the cloud service (CORS-scoped to this origin).
+  const CHECKOUT_URL = "https://cloud.elevenmessenger.com/api/donate/checkout";
+  const err = document.getElementById("donate-error");
+  if (new URLSearchParams(location.search).get("thanks") === "1") {
+    document.getElementById("thanks").hidden = false;
+  }
+  async function donate(amountMinor, currency) {
+    err.hidden = true;
+    try {
+      const resp = await fetch(CHECKOUT_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ amount_minor: amountMinor, currency }),
+      });
+      const body = await resp.json();
+      if (!resp.ok || !body.url) throw new Error(body.message || "checkout failed");
+      location.href = body.url;
+    } catch (e) {
+      err.textContent = "Couldn’t start the checkout — " + e.message + ". Please try again.";
+      err.hidden = false;
+    }
+  }
+  for (const b of document.querySelectorAll(".donate-amt")) {
+    b.addEventListener("click", () => donate(Number(b.dataset.minor), "eur"));
+  }
+  document.getElementById("donate-custom").addEventListener("submit", (ev) => {
+    ev.preventDefault();
+    const v = Number(document.getElementById("donate-amount").value);
+    if (!Number.isFinite(v) || v < 1.1) {
+      err.textContent = "The smallest donation is 1.10 — below that the card fee eats the gift.";
+      err.hidden = false;
+      return;
+    }
+    donate(Math.round(v * 100), document.getElementById("donate-cur").value);
+  });
+</script>
