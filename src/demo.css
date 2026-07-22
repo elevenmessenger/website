@@ -3,9 +3,13 @@
    (its own window chrome, captured with alpha corners), and the native iPhone
    app (framed in a device bezel). Shots are captured against a seeded demo
    space; regenerate them with the scripts noted in the repo README when the
-   product's look changes. */
+   product's look changes.
 
-.collage {
+   The audience pages reuse the same browser window on its own (`.shot-solo`),
+   each showing a different seeded space. */
+
+.collage,
+.shot-solo {
   --d-border: light-dark(#e7e9f0, rgba(255, 255, 255, 0.1));
   --d-sidebar: light-dark(#f8f9fc, #1a1d22);
   --d-bg: light-dark(#f6f7fb, #15171c);
@@ -100,6 +104,24 @@
 .collage-caption {
   text-align: center;
   margin: 2.75rem 0 0;
+}
+
+/* One web shot standing on its own — the audience pages (communities,
+   families) show a single space rather than the three-device collage, so the
+   browser window is bigger and sits square on the page. */
+.shot-solo {
+  flex-direction: column;
+  margin: 2.5rem auto 1.5rem;
+}
+.shot-solo .frame-web {
+  width: min(30rem, 92vw);
+}
+.shot-solo figcaption {
+  margin: 1rem 0 0;
+  color: var(--muted);
+  font-size: 0.92rem;
+  text-align: center;
+  max-width: 32rem;
 }
 @media (max-width: 68rem) {
   .collage .frame-web { display: none; }

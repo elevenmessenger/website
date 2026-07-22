@@ -106,6 +106,60 @@
       }
       .section-sub { color: #9aa1b3; max-width: 44rem; margin: 0 0 2.4rem; }
 
+      /* ---- the screenshot, in a browser window ---- */
+      /* A real capture of the real web app against a seeded demo space (the
+         same treatment as the marketing site's hero collage), re-chromed for
+         the deep-space palette. */
+      /* Longhand: the shorthand would drop .wrap's horizontal padding. */
+      .shot-section { padding-top: 1rem; padding-bottom: 6.5rem; }
+      .shot-solo {
+        margin: 0 auto;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+      }
+      .frame-web {
+        width: min(30rem, 92vw);
+        border-radius: 14px;
+        border: 1px solid rgba(255, 255, 255, 0.12);
+        background: #141828;
+        box-shadow: 0 30px 80px rgba(0, 0, 0, 0.6), 0 0 60px rgba(134, 132, 246, 0.14);
+        overflow: hidden;
+      }
+      .frame-web img { display: block; width: 100%; height: auto; }
+      .browser-bar {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        height: 34px;
+        padding: 0 12px;
+        background: #10131f;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.09);
+      }
+      .tl { width: 11px; height: 11px; border-radius: 50%; flex: none; }
+      .tl-r { background: #ff5f57; }
+      .tl-y { background: #febc2e; }
+      .tl-g { background: #28c840; }
+      .browser-url {
+        flex: 1;
+        font-size: 11px;
+        color: #767d92;
+        background: #070a16;
+        border-radius: 999px;
+        padding: 3px 12px;
+        text-align: center;
+        overflow: hidden;
+        white-space: nowrap;
+      }
+      .browser-url .lock { opacity: 0.7; margin-right: 4px; }
+      .shot-solo figcaption {
+        margin: 1.3rem 0 0;
+        max-width: 34rem;
+        text-align: center;
+        color: #9aa1b3;
+        font-size: 0.95rem;
+      }
+
       /* ---- feature grid ---- */
       .feat-grid {
         display: grid;
@@ -361,6 +415,24 @@
       serious work. No more slacking!</p>
       <p class="hero-cta"><a class="btn btn-ghost" href="#pricing">See enterprise pricing &darr;</a></p>
     </header>
+
+    <section class="wrap shot-section" aria-label="Eleven Enterprise Edition in use">
+      <figure class="shot-solo">
+        <div class="frame-web">
+          <div class="browser-bar">
+            <span class="tl tl-r"></span><span class="tl tl-y"></span><span class="tl tl-g"></span>
+            <span class="browser-url"><span class="lock">&#128274;</span>chat.northgate.internal</span>
+          </div>
+          <img src="/assets/hero/enterprise-web.png"
+               alt="The Eleven web app on an internal deployment: a group called Q3 Alignment, 64 members, one of them online. An approval has been approved and now awaits approval; an item is parked in the car park with the other forty-one; an offer to build the thing in four hours is answered with a request for a one-pager for October’s steering group."
+               width="1166" height="1410" loading="lazy" />
+        </div>
+        <figcaption>
+          Enterprise Edition, deployed on-prem. Every message end-to-end
+          encrypted — including the ones about the one-pager.
+        </figcaption>
+      </figure>
+    </section>
 
     <section class="wrap" aria-label="Enterprise-grade features">
       <h2>Enterprise-grade. Every box ticked.</h2>
