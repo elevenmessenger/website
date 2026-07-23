@@ -11,6 +11,9 @@
   --ink: light-dark(#1c2333, #e7e9f0);
   --muted: light-dark(#5a6170, #9aa1b3);
   --border: light-dark(#e7e9f0, rgba(255, 255, 255, 0.1));
+  /* Boundaries of *controls*, which WCAG 2.2 AA holds to 3:1 (SC 1.4.11) —
+     --border above is a decorative card edge and stays feather-light. */
+  --border-strong: light-dark(#7d8397, #6b7183);
   --accent: light-dark(#5666f0, #7d8bff);
   --accent-ink: light-dark(#ffffff, #0a0e2a);
   --quiet: light-dark(#eef0f6, #2a2e38);
@@ -224,13 +227,16 @@ main {
 .btn-primary:hover {
   filter: brightness(1.06);
 }
+/* The secondary sits beside a filled primary, so it carries a visible edge
+   but a quieter label — near-black ink outweighed the primary's own white. */
 .btn-ghost {
-  border-color: var(--border);
-  color: var(--ink);
+  border-color: var(--border-strong);
+  color: var(--muted);
   background: transparent;
 }
 .btn-ghost:hover {
   border-color: var(--ink);
+  color: var(--ink);
 }
 .is-soon {
   opacity: 0.55;

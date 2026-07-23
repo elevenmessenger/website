@@ -3,6 +3,7 @@ module.exports = function (eleventyConfig) {
   eleventyConfig.addPassthroughCopy({ "src/styles.css": "styles.css" });
   eleventyConfig.addPassthroughCopy({ "src/demo.css": "demo.css" });
   eleventyConfig.addPassthroughCopy({ "src/ambient.js": "ambient.js" });
+  eleventyConfig.addPassthroughCopy({ "src/loc-money.js": "loc-money.js" });
   eleventyConfig.addPassthroughCopy({ "src/assets": "assets" });
   // CNAME tells GitHub Pages which custom domain to serve (elevenmessenger.com).
   eleventyConfig.addPassthroughCopy({ "src/CNAME": "CNAME" });
