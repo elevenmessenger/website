@@ -1,0 +1,298 @@
+<!doctype html>
+<!-- These go to eleven. -->
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>The nerdy stuff · Eleven</title>
+    <meta name="description" content="ECDH P-256, per-thread AES-256-GCM, one 18 MB static binary per space, scale-to-zero hibernation into object storage. The whole design, for people who want the details." />
+    <meta name="color-scheme" content="light dark" />
+    
+    <meta name="theme-color" content="#f6f7fb" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#15171c" media="(prefers-color-scheme: dark)" />
+    <link rel="icon" type="image/png" sizes="32x32" href="/assets/icon_32.png" />
+    <link rel="apple-touch-icon" href="/assets/icon_256.png" />
+    <meta property="og:title" content="Eleven" />
+    <meta property="og:description" content="ECDH P-256, per-thread AES-256-GCM, one 18 MB static binary per space, scale-to-zero hibernation into object storage. The whole design, for people who want the details." />
+    <meta property="og:type" content="website" />
+    <link rel="stylesheet" href="/styles.css" />
+    
+  </head>
+  <body>
+    <canvas class="ambient-canvas" id="ambient-canvas" aria-hidden="true"></canvas>
+    <header class="site-head">
+      <a class="brand" href="/">
+        <img class="brand-mark" src="/assets/icon_128.png" alt="" width="28" height="28" />
+        Eleven
+      </a>
+      <nav class="site-nav" aria-label="Site">
+        <a href="/features/">Features</a>
+        <a href="/security/">Security</a>
+        <a href="/about/">About</a>
+        <a class="nav-signin" href="https://home.elevenmessenger.com">Sign in</a>
+      </nav>
+    </header>
+
+    <main>
+<section class="prose">
+  <h1>The nerdy stuff</h1>
+  <p class="updated">You clicked. Welcome.</p>
+
+  <p>
+    The rest of this site is written for people who just want to talk to
+    their family. This page is for you: the design decisions, the actual
+    ciphers, and the numbers. If any claim here doesn’t hold up, we want to
+    hear about it —
+    <a href="mailto:team@elevenmessenger.com">team@elevenmessenger.com</a>.
+  </p>
+
+  <h2>The one rule</h2>
+  <p>
+    Everything follows from a single invariant: <strong>if the server is
+    compromised, the attacker gets nothing worth having.</strong> The server
+    stores and relays opaque ciphertext plus key material it cannot open.
+    It never sees message content, names, or file bytes, and it never
+    receives a usable key. Not "we promise not to look" — <em>can’t</em>.
+  </p>
+
+  <h2>The cryptography</h2>
+  <ul>
+    <li>
+      <strong>Identity:</strong> every member has an ECDH P-256 keypair.
+      The private key lives only on your devices; the public half joins the
+      roster.
+    </li>
+    <li>
+      <strong>Per-thread keys:</strong> every conversation gets its own
+      AES-256-GCM key, wrapped to each member’s public key via ECIES. The
+      server stores only the wrapped blobs. Membership is enforced by
+      cryptography, not by a row in a permissions table.
+    </li>
+    <li>
+      <strong>Everything rides inside the envelope:</strong> attachments,
+      their filenames, their MIME types, and sender names travel inside the
+      encrypted payload — never as server-side metadata. Even roster
+      display names are sealed under a per-space key the server can’t open.
+    </li>
+    <li>
+      <strong>Invites:</strong> the one-time secret lives in the URL
+      <code>#fragment</code>, which browsers never send to any server. It
+      bootstraps your keys locally, then it’s spent.
+    </li>
+    <li>
+      <strong>Sign-in:</strong> WebAuthn passkeys — and not just for
+      authentication. The PRF extension derives the key that seals your
+      backup vault, so the vault server holds ciphertext it can’t open
+      either. No passwords exist anywhere in the system.
+    </li>
+    <li>
+      <strong>Push:</strong> notification payloads are sealed bytes,
+      decrypted on-device. The Apple push relay holds a signing credential,
+      not a decryption key — it forwards the same ciphertext Apple already
+      sees.
+    </li>
+    <li>
+      <strong>Admin is not god:</strong> the admin credential authorises
+      roster management only. It is not, and cannot become, a decryption
+      key. Only its hash is stored.
+    </li>
+    <li>
+      <strong>Tamper-evident history:</strong> every write — messages and
+      key hand-outs alike — is journaled under chained, signed Merkle
+      checkpoints (RFC 6962-style). Members’ devices gossip the chain
+      heads inside E2EE traffic and alarm on forks, clients can demand
+      inclusion proofs for held messages, and invite links carry a MAC
+      that pins the joiner’s first key. A public witness log — anchoring
+      the chain outside the server — is the designed next step.
+    </li>
+    <li>
+      <strong>AI helpers are members, not backdoors:</strong> a bot is an
+      ordinary E2EE member whose "device" is a machine its operator runs —
+      it can decrypt exactly the conversations it’s been invited into, and
+      bot code never runs inside the server process.
+    </li>
+  </ul>
+  <p>
+    All wrap/unwrap and encrypt/decrypt happens client-side, in plain,
+    unminified, framework-free JavaScript served with no build step — the
+    code your browser runs is the code we wrote, readable in your dev tools
+    right now.
+  </p>
+
+  <h2>What a stolen database actually yields</h2>
+  <p>
+    Steal an Eleven space’s entire database and you hold: a membership
+    graph (which keys are in which threads), message timings and sizes,
+    wrapped key blobs you can’t unwrap, and ciphertext. No names, no
+    message content, no files, no phone numbers, no emails — chatting
+    never collects them, and a paid space’s billing contact lives with
+    Stripe, not in any space’s database. The
+    <a href="/security/">security page</a> spells out the honest limits,
+    including what’s still open on key distribution (a swapped key is
+    caught and alarmed today; a public witness log comes next).
+  </p>
+
+  <h2>The deployment model</h2>
+  <p>
+    This is the part we think is novel — not any one piece, but the
+    combination: one static ~18&nbsp;MB binary; one isolated process
+    and database per space; a thin TLS router over unix sockets;
+    scale-to-zero hibernation into object storage with a single-writer
+    lease; versioned side-by-side deploys with automatic rollback. Full detail, including the arithmetic for scaling to billions of
+    members: <a href="/planet-scale/">the planet-scale page</a>.
+  </p>
+
+  <h2>Built by humanity, built to outlive AI</h2>
+  <p>
+    The licence is its own design decision: the <strong>GAI Licence</strong>
+    — MIT plus a share-alike clause returning any distributed derivative to
+    the commons, with preserved &#129302; authorship markers, because
+    generative AI distils the public work of billions of people and no one
+    downstream gets to fence that off.
+    <a href="/story/">The story page</a> has the why.
+  </p>
+  <p>
+    A companion engineering rule you can check in the code: everything must
+    stay maintainable by humans alone. Vanilla JavaScript with no build
+    step, one boring Go binary, tools you can read in an afternoon — so the
+    product outlives the availability, and the price, of the intelligence
+    that helped build it. If AI gets cheaper, this is a solid baseline; if
+    it goes away, nothing here dies with it.
+  </p>
+
+  <h2>By the numbers</h2>
+  <ul class="stats" aria-label="Engineering figures, as of July 2026">
+    <li><span class="stat-n">~44k</span><span class="stat-l">lines of code, total — web, server, native apps, helpers</span></li>
+    <li><span class="stat-n">18 MB</span><span class="stat-l">the entire server, one static file</span></li>
+    <li><span class="stat-n">~23 MB</span><span class="stat-l">RAM for a whole running space — app, database, frontend</span></li>
+    <li><span class="stat-n">1.3 MB</span><span class="stat-l">the iPhone app download</span></li>
+    <li><span class="stat-n">2.2 MB</span><span class="stat-l">the Mac app download</span></li>
+    <li><span class="stat-n">0.21</span><span class="stat-l">load average of the whole production fleet on 2 vCPUs</span></li>
+  </ul>
+  <p class="fine">
+    Hand-measured on the production fleet, July 2026. They drift a little
+    every release; treat each as &ldquo;about&rdquo;.
+  </p>
+
+  <h2>Against the privacy specialists</h2>
+  <p>
+    <a href="/features/">The features page</a> compares Eleven with the
+    apps regular people actually use. You’ll want this table instead —
+    every pillar of the Eleven model exists <em>somewhere</em> in this
+    landscape; the bet is the combination.
+  </p>
+  <div class="compare-scroll" tabindex="0" role="region" aria-label="Comparison of Eleven with privacy-focused messengers">
+    <table class="compare">
+      <thead>
+        <tr>
+          <th scope="col"><span class="visually-hidden">Attribute</span></th>
+          <th scope="col">Eleven</th>
+          <th scope="col">Signal</th>
+          <th scope="col">Matrix / Element</th>
+          <th scope="col">SimpleX</th>
+          <th scope="col">Session</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <th scope="row">End-to-end encrypted</th>
+          <td class="us">Yes</td>
+          <td>Yes</td>
+          <td>Yes (rooms)</td>
+          <td>Yes (double ratchet)</td>
+          <td>Yes</td>
+        </tr>
+        <tr>
+          <th scope="row">Identifier required</th>
+          <td class="us">None — invite link</td>
+          <td>Phone number</td>
+          <td>Username + account</td>
+          <td>None</td>
+          <td>Random Session ID</td>
+        </tr>
+        <tr>
+          <th scope="row">Onboarding</th>
+          <td class="us">Click a link, you’re chatting</td>
+          <td>Install + phone verify</td>
+          <td>Pick a server, register</td>
+          <td>One-time invitation link</td>
+          <td>Generate an ID</td>
+        </tr>
+        <tr>
+          <th scope="row">Server topology</th>
+          <td class="us">Many small instances + thin glue</td>
+          <td>Centralized, one operator</td>
+          <td>Federated homeservers</td>
+          <td>Relay queues</td>
+          <td>Onion-routed community nodes</td>
+        </tr>
+        <tr>
+          <th scope="row">Self-hosting</th>
+          <td class="us">One binary, designed to be simple</td>
+          <td>No</td>
+          <td>Yes, but a sysadmin job</td>
+          <td>Yes (relays)</td>
+          <td>Not really</td>
+        </tr>
+        <tr>
+          <th scope="row">What a hacked server exposes</th>
+          <td class="us">Ciphertext only</td>
+          <td>Little (sealed sender)</td>
+          <td>Membership, timing, server addresses</td>
+          <td>Very little — no IDs to correlate</td>
+          <td>Little (onion routing)</td>
+        </tr>
+        <tr>
+          <th scope="row">Mainstream UX</th>
+          <td class="us">A design goal, not a nice-to-have</td>
+          <td>Excellent</td>
+          <td>Improving, still heavy</td>
+          <td>Privacy-enthusiast</td>
+          <td>Decent</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+  <p class="fine" style="margin-top: 1rem">
+    Snapshot as of July 2026 — these projects ship fast; corrections
+    welcome.
+  </p>
+
+  <h2>Run it yourself</h2>
+  <p>
+    Self-hosting is a right here, not a dare: one binary, a
+    &euro;4-a-month box, about ten minutes, certificates and updates
+    handled for you. It has <a href="/self-host/">its own page</a>, with
+    the actual commands.
+  </p>
+
+  <h2>Watch it run</h2>
+  <p>
+    The live fleet — capacity, services, versions rolling out — is public
+    at <a href="https://status.elevenmessenger.com">status.elevenmessenger.com</a>,
+    part of <a href="/openness/">the openness charter</a>. The philosophy
+    of building this way is
+    <a href="https://11factor.org">The Eleven Factors</a> — a serious
+    parody of 12factor.net.
+  </p>
+
+  <p class="fine">
+    And yes, obviously: zsh.
+  </p>
+</section>
+</main>
+
+    <footer class="site-foot">
+      <p>The group chat of your dreams. No ads, no tracking, no big tech — just your people.</p>
+      <ul class="foot-links">
+        <li><a href="/about/">About Eleven</a></li>
+        <li><a href="/everyone/">Built for everyone</a></li>
+        <li><a href="/privacy/">Privacy</a></li>
+        <li><a href="https://status.elevenmessenger.com">Status</a></li>
+        <li><a href="https://github.com/elevenmessenger/releases">Downloads</a></li>
+        <li><a href="mailto:team@elevenmessenger.com">team@elevenmessenger.com</a></li>
+      </ul>
+    </footer>
+    <script type="module" src="/ambient.js"></script>
+  </body>
+</html>

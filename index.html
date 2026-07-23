@@ -1,0 +1,223 @@
+<!doctype html>
+<!-- These go to eleven. -->
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Eleven — the group chat of your dreams</title>
+    <meta name="description" content="Eleven is secure group chat for teams. Fast, private, no ads, no tracking. One click to join. Great chats, no compromise." />
+    <meta name="color-scheme" content="light dark" />
+    
+    <meta name="theme-color" content="#f6f7fb" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#15171c" media="(prefers-color-scheme: dark)" />
+    <link rel="icon" type="image/png" sizes="32x32" href="/assets/icon_32.png" />
+    <link rel="apple-touch-icon" href="/assets/icon_256.png" />
+    <meta property="og:title" content="Eleven" />
+    <meta property="og:description" content="Eleven is secure group chat for teams. Fast, private, no ads, no tracking. One click to join. Great chats, no compromise." />
+    <meta property="og:type" content="website" />
+    <link rel="stylesheet" href="/styles.css" />
+    <link rel="stylesheet" href="/demo.css" />
+  </head>
+  <body>
+    <canvas class="ambient-canvas" id="ambient-canvas" aria-hidden="true"></canvas>
+    <header class="site-head">
+      <a class="brand" href="/">
+        <img class="brand-mark" src="/assets/icon_128.png" alt="" width="28" height="28" />
+        Eleven
+      </a>
+      <nav class="site-nav" aria-label="Site">
+        <a href="/features/">Features</a>
+        <a href="/security/">Security</a>
+        <a href="/about/">About</a>
+        <a class="nav-signin" href="https://home.elevenmessenger.com">Sign in</a>
+      </nav>
+    </header>
+
+    <main>
+<section class="hero">
+  <h1>Leave big tech behind.<br />Take everyone with you.</h1>
+  <p class="lede">
+    <span class="ll">Eleven is secure group chat for teams. Fast, private, no ads, no tracking.</span>
+    <span class="ll">One click to join. Great chats, no compromise.</span>
+  </p>
+  <div class="cta">
+    <a class="btn btn-primary" href="#get">Get Eleven</a>
+    <a class="btn btn-ghost" href="https://home.elevenmessenger.com">Sign in</a>
+  </div>
+  <p class="fine">
+    Invite only right now. Ask someone for a link to join.
+  </p>
+</section>
+
+<!-- Real screenshots: the actual apps against a seeded demo space — the web
+     app (Lit Room theme) in a browser frame, the native Mac app’s own window,
+     and the native iPhone app in Apple’s product bezel. -->
+<figure class="collage" role="img"
+        aria-label="Real screenshots of the same family space three ways: the web app in the warm Lit Room theme, the Mac app, and the iPhone app.">
+  <div class="frame-web">
+    <div class="browser-bar">
+      <span class="tl tl-r"></span><span class="tl tl-y"></span><span class="tl tl-g"></span>
+      <span class="browser-url"><span class="lock">&#128274;</span>sunset-road.11ch.at</span>
+    </div>
+    <img src="/assets/hero/hero-web.png" alt="" width="1166" height="1120" loading="eager" />
+  </div>
+  <img class="shot-mac" src="/assets/hero/hero-mac.png" alt="" width="1300" height="919" loading="eager" />
+  <img class="shot-iphone" src="/assets/hero/hero-ios.png" alt="" width="760" height="1554" loading="eager" />
+</figure>
+
+<section class="feature-group" aria-label="Who Eleven is for">
+  <h2>Just think&hellip;</h2>
+  <p class="section-sub">
+    What if your group chat app didn’t track you? What if you could host
+    your own? What if it was so secure you didn’t need to? What if you
+    could access all your teams in a single list? What if you had truly
+    native apps and not janky webviews?
+  </p>
+  <p class="section-sub">
+    What if your group chat app wasn’t always trying to sell you more junk
+    you didn’t need?
+  </p>
+  <nav class="audiences audiences-tiered" aria-label="Eleven for your kind of group">
+    <a class="audience audience-primary" href="/business/">
+      <h3>Secure group chat for teams</h3>
+      <p>All your chats, end-to-end encrypted. Bots and AI optional. No
+      creeps reading your data. No ads, no upsells, no jank.
+      <span class="loc-money" data-n="11">€11</span> per member, per year.</p>
+      <span class="go">Eleven for business &rarr;</span>
+    </a>
+    <a class="audience audience-aside" href="/enterprise/">
+      <h3>Need more juice?</h3>
+      <p>If expensive means quality, we have just the thing for you. All the
+      security, none of the value.</p>
+      <span class="go">Eleven Enterprise Edition &rarr;</span>
+    </a>
+    <a class="audience audience-aside" href="/families/">
+      <h3>Great for your family too</h3>
+      <p>Why should your family stuff be any less secure? Runs in any
+      browser, on the family iPad or a school Chromebook — no phone number,
+      no account, no Meta.</p>
+      <span class="go">Eleven for families &rarr;</span>
+    </a>
+    <a class="audience audience-aside" href="/communities/">
+      <h3>Your community deserves better</h3>
+      <p>Community tech, community platform. Moderation, subscriptions,
+      tiers: all built in. <span class="loc-money" data-n="0.11">€0.11</span>
+      per member per year, 11% commission on subs.</p>
+      <span class="go">Eleven for communities &rarr;</span>
+    </a>
+  </nav>
+</section>
+
+<section class="attrs" aria-label="What Eleven is">
+  <h2>Eleven is&hellip;</h2>
+
+  <div class="attr">
+    <h3>Fast and effortless</h3>
+    <div class="attr-body">
+      <p>
+        Invite team-members with a single link. First-class web app with
+        notifications, or fully native Mac and iOS.
+      </p>
+    </div>
+  </div>
+
+  <div class="attr">
+    <h3>Guaranteed privacy, even from us</h3>
+    <div class="attr-body">
+      <p>
+        Messages and photos are encrypted on your devices before they travel.
+        If someone stole our servers tonight, they’d hold gibberish — no
+        names, no messages, no photos. Not &ldquo;we promise not to
+        look&rdquo;. <em>Can’t</em> look.
+      </p>
+    </div>
+  </div>
+
+  <div class="attr">
+    <h3>Yours</h3>
+    <div class="attr-body">
+      <p>
+        No ads, no tracking, no algorithm. Eleven just works, whether you
+        buy space from us, host it yourself, or run it on your laptop. Your
+        data is yours and yours alone.
+      </p>
+    </div>
+  </div>
+
+  <p style="margin-top: 1.25rem">
+    <a href="/features/#eleven-is">More &rarr;</a>
+  </p>
+</section>
+
+<section class="creed" aria-label="What Eleven proves">
+  <p>
+    <span class="creed-lead">Eleven is proof</span> that great user
+    experience, top grade security, privacy, openness, and respect are not
+    just possible, but that together they are better.
+  </p>
+</section>
+
+<aside class="nerd-callout">
+  <p>
+    Eleven went from nothing to the apps above in about two weeks, built by
+    two dads and a lot of AI. The story, the values behind it, and all the
+    nerdy stuff have a page of their own.
+  </p>
+  <a class="btn btn-ghost" href="/about/">About Eleven &rarr;</a>
+</aside>
+
+<section class="creed creed-quiet" aria-label="The bar">
+  <p>
+    This one goes to eleven — and it takes everyone with it.
+  </p>
+</section>
+
+<section id="get" class="get">
+  <h2>Don’t get mad. Get&nbsp;Eleven.</h2>
+  <div class="get-grid">
+    <div class="get-card">
+      <h3>Mac</h3>
+      <p>A native desktop app. A 15&nbsp;MB download, and it updates itself.</p>
+      <a class="btn btn-primary" href="https://github.com/elevenmessenger/releases/releases/latest/download/Eleven.dmg">Download for Mac</a>
+    </div>
+    <div class="get-card">
+      <h3>iPhone</h3>
+      <p>In beta now. The public TestFlight link opens soon.</p>
+      <span class="btn btn-primary is-soon" aria-disabled="true">Join the beta — coming soon</span>
+    </div>
+    <div class="get-card">
+      <h3>Any browser</h3>
+      <p>
+        Nothing to install. Open the invite link someone sent you and
+        you’re in.
+      </p>
+      <a class="btn btn-ghost" href="https://home.elevenmessenger.com">Sign in</a>
+    </div>
+  </div>
+  <p class="fine">
+    Free to start, no account, no phone number. You’ll be chatting in under a
+    minute.
+  </p>
+</section>
+
+<p class="fine" style="margin-top: 2.5rem; text-align: center">
+  Too polite? <a href="/unfiltered/">Tell us what you really think&nbsp;&rarr;</a>
+</p>
+
+<script type="module" src="/loc-money.js"></script>
+</main>
+
+    <footer class="site-foot">
+      <p>The group chat of your dreams. No ads, no tracking, no big tech — just your people.</p>
+      <ul class="foot-links">
+        <li><a href="/about/">About Eleven</a></li>
+        <li><a href="/everyone/">Built for everyone</a></li>
+        <li><a href="/privacy/">Privacy</a></li>
+        <li><a href="https://status.elevenmessenger.com">Status</a></li>
+        <li><a href="https://github.com/elevenmessenger/releases">Downloads</a></li>
+        <li><a href="mailto:team@elevenmessenger.com">team@elevenmessenger.com</a></li>
+      </ul>
+    </footer>
+    <script type="module" src="/ambient.js"></script>
+  </body>
+</html>

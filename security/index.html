@@ -1,0 +1,171 @@
+<!doctype html>
+<!-- These go to eleven. -->
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>How the security model works · Eleven</title>
+    <meta name="description" content="Eleven’s end-to-end encryption, explained honestly — what the server can and can’t see, and the trade-offs we’ve made." />
+    <meta name="color-scheme" content="light dark" />
+    
+    <meta name="theme-color" content="#f6f7fb" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#15171c" media="(prefers-color-scheme: dark)" />
+    <link rel="icon" type="image/png" sizes="32x32" href="/assets/icon_32.png" />
+    <link rel="apple-touch-icon" href="/assets/icon_256.png" />
+    <meta property="og:title" content="Eleven" />
+    <meta property="og:description" content="Eleven’s end-to-end encryption, explained honestly — what the server can and can’t see, and the trade-offs we’ve made." />
+    <meta property="og:type" content="website" />
+    <link rel="stylesheet" href="/styles.css" />
+    
+  </head>
+  <body>
+    <canvas class="ambient-canvas" id="ambient-canvas" aria-hidden="true"></canvas>
+    <header class="site-head">
+      <a class="brand" href="/">
+        <img class="brand-mark" src="/assets/icon_128.png" alt="" width="28" height="28" />
+        Eleven
+      </a>
+      <nav class="site-nav" aria-label="Site">
+        <a href="/features/">Features</a>
+        <a href="/security/">Security</a>
+        <a href="/about/">About</a>
+        <a class="nav-signin" href="https://home.elevenmessenger.com">Sign in</a>
+      </nav>
+    </header>
+
+    <main>
+<section class="prose">
+  <h1>How the security model works</h1>
+  <p class="updated">Written to be checked, not taken on faith.</p>
+
+  <p>
+    The rule is simple: if the server is ever compromised, the attacker
+    gets nothing worth having. Everything below follows from that.
+  </p>
+
+  <ul class="stats" aria-label="Security facts">
+    <li><span class="stat-n">0</span><span class="stat-l">passwords stored — none exist anywhere in the system</span></li>
+    <li><span class="stat-n">0</span><span class="stat-l">phone numbers or emails needed to chat</span></li>
+    <li><span class="stat-n">0</span><span class="stat-l">trackers or analytics, first- or third-party</span></li>
+    <li><span class="stat-n">0</span><span class="stat-l">messages our servers can read</span></li>
+  </ul>
+
+  <h2>Your device holds the keys</h2>
+  <p>
+    When you join a chat, your device generates a keypair (ECDH P-256).
+    The public half goes on the chat’s member list. The private half never
+    leaves your device. There’s no password to steal, because there’s no
+    password. Your device is your identity.
+  </p>
+
+  <h2>Every chat has its own key</h2>
+  <p>
+    Each conversation, group or DM, gets its own AES-256 key. That key is
+    wrapped (encrypted) separately to every member’s public key, and the
+    server only ever stores the wrapped copies, which it can’t open.
+    Membership is the boundary, and cryptography enforces it, not a
+    server setting.
+  </p>
+  <p>
+    Your device encrypts every message before it’s sent: text,
+    attachments, file names, even the sender’s name carried inside the
+    message. Display names on the member list are sealed too, under a key
+    only members hold. The server just stores and relays ciphertext it
+    can’t read. Push notifications arrive encrypted as well, and get
+    decrypted on your device.
+  </p>
+
+  <h2>Invites don’t leak</h2>
+  <p>
+    An invite link carries a one-time secret after the <code>#</code> in
+    the URL. Browsers never send that part to any server. It exists to
+    bootstrap your keys locally, then it’s spent. The admin credential
+    only manages the member list — it can’t decrypt anything.
+  </p>
+
+  <h2>What the server has to see</h2>
+  <p>
+    To actually deliver messages, the server needs some information.
+    We’d rather say what, plainly:
+  </p>
+  <ul>
+    <li>
+      <strong>Who’s in a chat with whom.</strong> It routes messages to
+      members, so it knows each chat’s membership — as keys, not names.
+    </li>
+    <li>
+      <strong>When, and how much.</strong> Message timing and sizes are
+      visible in transit, as they are for any messenger.
+    </li>
+    <li>
+      <strong>A posted link, if previews are on.</strong> The server
+      fetches a URL you post, once, to build the preview card. It sees
+      that URL and nothing else in the message. This is the one
+      deliberate exception, and you can turn it off.
+    </li>
+  </ul>
+  <p>
+    So if the database were ever stolen, it would show that keys talk to
+    keys. It wouldn’t show a name, and it wouldn’t show a single word
+    anyone actually said.
+  </p>
+
+  <h2>The honest limits</h2>
+  <p>Every security model has edges. Ours:</p>
+  <ul>
+    <li>
+      <strong>Removing someone doesn’t un-share the past.</strong> A
+      removed member stops getting new messages, but a key they already
+      held isn’t clawed back.
+    </li>
+    <li>
+      <strong>Your keys are yours to keep.</strong> Saving your sign-in
+      takes one tap, and then any device can let you back in. Skip it,
+      lose your only device, and your keys are gone along with any
+      history only you could read. We can’t recover it. We never had it.
+    </li>
+    <li>
+      <strong>Key hand-out still trusts the server — but no longer
+      quietly.</strong> Public keys are handed out by the server, and
+      full out-of-band verification is still to come. What’s already
+      shipped narrows the gap: every key hand-out is committed to a
+      signed, append-only history that members’ devices cross-check with
+      each other, and invite links cryptographically pin the invited
+      person’s first key — so a swapped key is no longer silent; it
+      raises an alarm in the app. The last piece — a public log that
+      every device checks every key against — is designed and being
+      built.
+    </li>
+  </ul>
+
+  <h2>Check our work</h2>
+  <p>
+    All of this runs in the open — plain, readable code on your device,
+    not hidden behind an API. It’s audited by the latest AI models too,
+    including security review by Claude&nbsp;Fable. If something
+    here doesn’t match what the code actually does, tell us:
+    <a href="mailto:team@elevenmessenger.com">team@elevenmessenger.com</a>.
+  </p>
+
+  <p class="fine">
+    For what data is handled and kept, see <a href="/privacy/">Privacy</a>.
+    For the full technical picture — ciphers, key wrapping, what a stolen
+    database yields — see <a href="/nerds/">the nerdy stuff</a>.
+  </p>
+</section>
+</main>
+
+    <footer class="site-foot">
+      <p>The group chat of your dreams. No ads, no tracking, no big tech — just your people.</p>
+      <ul class="foot-links">
+        <li><a href="/about/">About Eleven</a></li>
+        <li><a href="/everyone/">Built for everyone</a></li>
+        <li><a href="/privacy/">Privacy</a></li>
+        <li><a href="https://status.elevenmessenger.com">Status</a></li>
+        <li><a href="https://github.com/elevenmessenger/releases">Downloads</a></li>
+        <li><a href="mailto:team@elevenmessenger.com">team@elevenmessenger.com</a></li>
+      </ul>
+    </footer>
+    <script type="module" src="/ambient.js"></script>
+  </body>
+</html>

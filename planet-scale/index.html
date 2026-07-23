@@ -1,0 +1,159 @@
+<!doctype html>
+<!-- These go to eleven. -->
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Planet-scale · Eleven</title>
+    <meta name="description" content="Eleven’s deployment architecture in detail — one process per space, a thin router, scale-to-zero hibernation into object storage, and a path to billions of members." />
+    <meta name="color-scheme" content="light dark" />
+    
+    <meta name="theme-color" content="#f6f7fb" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#15171c" media="(prefers-color-scheme: dark)" />
+    <link rel="icon" type="image/png" sizes="32x32" href="/assets/icon_32.png" />
+    <link rel="apple-touch-icon" href="/assets/icon_256.png" />
+    <meta property="og:title" content="Eleven" />
+    <meta property="og:description" content="Eleven’s deployment architecture in detail — one process per space, a thin router, scale-to-zero hibernation into object storage, and a path to billions of members." />
+    <meta property="og:type" content="website" />
+    <link rel="stylesheet" href="/styles.css" />
+    
+  </head>
+  <body>
+    <canvas class="ambient-canvas" id="ambient-canvas" aria-hidden="true"></canvas>
+    <header class="site-head">
+      <a class="brand" href="/">
+        <img class="brand-mark" src="/assets/icon_128.png" alt="" width="28" height="28" />
+        Eleven
+      </a>
+      <nav class="site-nav" aria-label="Site">
+        <a href="/features/">Features</a>
+        <a href="/security/">Security</a>
+        <a href="/about/">About</a>
+        <a class="nav-signin" href="https://home.elevenmessenger.com">Sign in</a>
+      </nav>
+    </header>
+
+    <main>
+<section class="prose">
+  <h1>Planet-scale,<br />one small space at a time</h1>
+  <p class="updated">The deployment architecture, in detail. The full design, with the numbers.</p>
+
+  <p>
+    Most chat platforms are one giant shared system:
+    one database with everyone’s rows in it, one fleet sized for the busiest
+    second of the busiest day, one blast radius. Eleven inverts that. There is no big system, just a very large number of very small ones.
+  </p>
+
+  <h2>The unit: one process per space</h2>
+  <p>
+    Every space is its own operating-system process running its own copy of
+    the server — one static ~18&nbsp;MB binary with the web frontend, an
+    embedded SQLite engine, WebSockets, and automatic TLS compiled in. Its
+    entire state is one database file of ciphertext. A whole running space —
+    app, database, everything — costs about 23&nbsp;MB of memory.
+  </p>
+  <p>
+    Isolation is a process boundary the kernel enforces, not a
+    <code>tenant_id</code> column. A bug in one space’s process has
+    no path to another space’s data, because they share nothing: no tables,
+    no caches, no message bus. And each space can run a different version of
+    the software, which keeps deployment boring.
+  </p>
+
+  <h2>The glue: a thin router</h2>
+  <p>
+    In front of the instances sits a deliberately thin router: it terminates
+    TLS (certificates issue themselves via Let’s Encrypt, including a
+    wildcard for instant new spaces) and proxies each hostname to its
+    instance over a local unix socket. That’s the whole job. Since message
+    bodies are <a href="/security/">already ciphertext</a>, the router sees
+    exactly what the instances see: nothing readable.
+  </p>
+  <p>
+    No Kubernetes, no service mesh, no sidecar fleet, no observability tier
+    burning a node pool. The "control plane" is a few small, single-purpose
+    programs — a provisioner that creates spaces, an activator that wakes
+    them — each of which is the same order of size as an instance.
+  </p>
+
+  <h2>The trick: sleep as a first-class state</h2>
+  <p>
+    Group chats are bursty — quiet most of the day, alive at dinner time. So
+    an idle space doesn’t idle: its state streams continuously into object
+    storage (as the ciphertext it already is), and after enough quiet its
+    process simply exits. Zero memory, zero CPU. The space’s cost while
+    asleep is a few megabytes of storage — a space’s entire encrypted
+    history is typically 1&ndash;16&nbsp;MB.
+  </p>
+  <p>
+    The first request to a sleeping space — a message, a member opening the
+    app — wakes it: the router holds the request, the activator restores
+    state and starts the process, and the answer arrives about a second
+    later. A single-writer lease in object storage guarantees that exactly
+    one live process ever owns a space’s state, so waking and sleeping are
+    safe to race.
+  </p>
+
+  <h2>Deploys: versioned, boring, reversible</h2>
+  <p>
+    Instances run side-by-side versions of the binary. A new release
+    canaries on one instance while the rest hold; then the fleet rolls one
+    instance at a time, health-checked, with automatic rollback on failure.
+    A swap drains in-flight requests while the router briefly holds new
+    ones, so members see nothing. Self-hosted boxes follow the same signed
+    release feed on the channel they choose — you can watch versions roll
+    across the live fleet on
+    <a href="https://status.elevenmessenger.com">the status page</a>.
+  </p>
+
+  <h2>The arithmetic of billions</h2>
+  <p>
+    This design scales by multiplication. At any moment
+    only ~5&ndash;20% of spaces are awake. Projected at a million spaces
+    (~10&nbsp;million members): roughly 100,000 warm processes &times;
+    ~25&nbsp;MB &asymp; 2.5&nbsp;TB of active RAM, around a thousand
+    provisioned vCPUs, ~15&nbsp;TB of parked ciphertext — a handful of
+    racks, not a data centre. Nothing about the model changes between ten
+    spaces and a million; there’s just more of the same small thing. The
+    experience never degrades with scale, because your space never shares a
+    process, a database, or a noisy neighbour with anyone.
+  </p>
+  <p>
+    Today’s whole production fleet — every space, the router, all the
+    sibling services, and the AI helpers — measures about 550&nbsp;MB of
+    RAM at a load average of 0.21 on two small CPUs. We publish those
+    numbers and keep measuring as we grow.
+  </p>
+
+  <h2>What it costs to run</h2>
+  <p>
+    An infrastructure that sleeps when its members do, runs compiled code
+    in tiny processes, and can’t compute over your conversations barely
+    draws power.
+    <a href="/planet/">The planet page</a> does the full carbon arithmetic
+    (~30&times; against a conventional stack), and
+    <a href="https://11factor.org">The Eleven Factors</a> is the philosophy
+    written down.
+  </p>
+
+  <p class="fine">
+    Related: <a href="/nerds/">the nerdy stuff</a> for the cryptography, and
+    <a href="/self-host/">self-hosting</a> for running all of this yourself.
+  </p>
+</section>
+</main>
+
+    <footer class="site-foot">
+      <p>The group chat of your dreams. No ads, no tracking, no big tech — just your people.</p>
+      <ul class="foot-links">
+        <li><a href="/about/">About Eleven</a></li>
+        <li><a href="/everyone/">Built for everyone</a></li>
+        <li><a href="/privacy/">Privacy</a></li>
+        <li><a href="https://status.elevenmessenger.com">Status</a></li>
+        <li><a href="https://github.com/elevenmessenger/releases">Downloads</a></li>
+        <li><a href="mailto:team@elevenmessenger.com">team@elevenmessenger.com</a></li>
+      </ul>
+    </footer>
+    <script type="module" src="/ambient.js"></script>
+  </body>
+</html>

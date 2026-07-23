@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Maintaining this guide — Running the fleet</title>
+<link rel="stylesheet" href="guide.css" />
+<script src="guide.js" defer></script>
+</head>
+<body data-page="README.html">
+<div class="frame">
+<nav class="side"></nav>
+<main class="content">
+<div class="wrap">
+
+<header class="top">
+  <p class="eyebrow"><span class="robot">&#129302;</span> Running the fleet &middot; About this guide</p>
+  <h1>Maintaining this guide</h1>
+  <p class="thesis">The guide is ten plain HTML pages, one shared stylesheet, and one shared script — <strong>no build step, no dependencies, nothing to install</strong>. Open any page in a browser straight from the repository, or serve the directory statically. This page explains how to keep it accurate and how to extend it.</p>
+</header>
+
+<h2 id="layout">How the directory is put together</h2>
+<div class="tablewrap">
+<table>
+  <tr><th>File</th><th>Role</th></tr>
+  <tr><td><code>index.html</code> &hellip; <code>reference.html</code></td><td>The ten content pages. Each is self-contained semantic HTML; nothing is generated.</td></tr>
+  <tr><td><code>guide.css</code></td><td>The single stylesheet. Colors, typography, panels, badges, tables, diagrams — edit here and every page follows. Light and dark themes are both defined at the top.</td></tr>
+  <tr><td><code>guide.js</code></td><td>The single script, and the guide&rsquo;s one source of structure: the <code>PAGES</code> list (which drives the sidebar and the previous/next links on every page) and the shared &ldquo;you are here&rdquo; system-map diagram. All injected markup is built from static in-code strings only, per the repository rule about <code>innerHTML</code>.</td></tr>
+  <tr><td><code>README.html</code></td><td>This page.</td></tr>
+</table>
+</div>
+
+<h2 id="editing">Editing an existing page</h2>
+<ul>
+  <li><strong>The code is the source of truth.</strong> Before changing a factual claim, check it against the code (<code>control.go</code>, <code>router.go</code>, <code>activator.go</code>, <code>mesh.go</code>, <code>controld.go</code>, <code>cloud.go</code>, <code>reaper.go</code>, <code>deploy/systemd/</code>) or the design documents (<code>docs/planet-scale.md</code>, <code>docs/instance-router.md</code>). Where this guide and the code disagree, fix the guide.</li>
+  <li><strong>Keep the register.</strong> The guide deliberately avoids contractions, avoids unexplained jargon, spells out commands in full, and repeats key ideas where they matter. Match that when adding text.</li>
+  <li><strong>Keep the status badges honest.</strong> Anything not operable today must carry <span class="status partial">partially built</span> or <span class="status planned">designed, not built</span>, and aspirational behaviour belongs in a dashed <code>.roadmap</code> panel, never in running prose. When a roadmap item ships, promote its badge and move the text out of the panel in the same change.</li>
+  <li><strong>Use the shared components</strong> rather than inventing new markup: <code>figure.cmd</code> for labelled command blocks, <code>ol.procedure</code> for step-by-step tasks, <code>.plain</code> / <code>.warn</code> / <code>.why</code> panels for recaps, cautions, and rationale, and <code>.status</code> badges. Examples of each are on every page.</li>
+</ul>
+
+<h2 id="adding">Adding a page</h2>
+<ol class="procedure">
+  <li><p class="step-title">Copy an existing page as the template.</p>
+  <p>Keep the <code>&lt;head&gt;</code>, the <code>.frame</code>/<code>nav.side</code>/<code>main.content</code> skeleton, the header block, and the <code>div.sysmap</code>. Set <code>data-page</code> on <code>&lt;body&gt;</code> to the new file name.</p></li>
+  <li><p class="step-title">Add one entry to the <code>PAGES</code> list in <code>guide.js</code>, in reading order.</p>
+  <p>That single edit updates every page&rsquo;s sidebar and previous/next links. Renumber the <code>num</code> fields and each page&rsquo;s eyebrow (&ldquo;Part NN of NN&rdquo;) if the new page changes the ordering.</p></li>
+  <li><p class="step-title">Choose the system-map highlight.</p>
+  <p>Set <code>data-highlight</code> on the <code>div.sysmap</code> to the node keys the page covers (<code>members router instances services control updater bucket backup peer</code>, space-separated). If the page introduces a genuinely new component, add a node for it to <code>sysmapSVG</code> in <code>guide.js</code> so the map stays a true whole-system picture.</p></li>
+</ol>
+
+<h2 id="checking">Checking your changes</h2>
+<figure class="cmd">
+<figcaption>Run in the repository</figcaption>
+<pre><code>node --check docs/planet-scale-guide/guide.js     # the script must stay parseable
+# then open the pages and click through:
+open docs/planet-scale-guide/index.html            # macOS; or any static file server</code></pre>
+</figure>
+<p>Eyeball both color schemes (the pages follow the operating system&rsquo;s light/dark preference), confirm the sidebar highlights the page you are on, and confirm the previous/next links at the bottom of each page still make sense.</p>
+
+<h2 id="authorship">Authorship marking</h2>
+<p>Per the repository&rsquo;s authorship convention (<code>CLAUDE.md</code>), these pages were written by an LLM and carry the visible &#129302; marker in each page&rsquo;s eyebrow. A human who substantially rewrites a page should remove the marker from that page (or add a person marker to certify it); an LLM editing further keeps it.</p>
+
+<h2 id="publishing">Publishing to elevenmessenger.com</h2>
+<p>The guide is published to <code>elevenmessenger.com/infrastructure/</code>, and this directory is the only source — nothing is ever hand-edited at the destination. Publishing is a <strong>local build</strong>, no GitHub Actions involved, in two steps:</p>
+<ol class="procedure">
+  <li><p class="step-title">Mirror this directory into the website repo.</p>
+  <p>Run <code>tools/sync-guide-to-website.sh &lt;path-to-a-local-checkout-of-elevenmessenger/website&gt;</code>. It copies this directory into that separate, public repo&rsquo;s <code>src/infrastructure/</code> (Eleventy passthrough-copies it to <code>/infrastructure/</code> unmodified — see that repo&rsquo;s <code>.eleventy.js</code>), commits, and pushes the website&rsquo;s <code>main</code>. It uses your own git credentials — no token to set up.</p></li>
+  <li><p class="step-title">Build and publish the website.</p>
+  <p>In that website checkout, run <code>./deploy.sh</code>: it builds the Eleventy site and force-pushes the output to the <code>gh-pages</code> branch, which GitHub Pages serves directly (deploy-from-a-branch). The custom domain and HTTPS ride along inside the build; live within about a minute. See the website repo&rsquo;s <code>README.md</code> &sect; Deploy.</p></li>
+</ol>
+<div class="why">
+  <span class="label">Why a local build, not a GitHub Action</span>
+  <p>This used to be automatic: a push to <code>main</code> touching this directory triggered <code>.github/workflows/sync-guide-to-website.yml</code>, which synced and deployed through the website&rsquo;s own workflow. Both are now <strong>disabled</strong> — the project moved off GitHub Actions entirely (every binary already builds locally, and Actions was only ever publishing this site). The workflow files are kept in their trees, disabled, as the record of that approach; re-enabling them and flipping the website&rsquo;s Pages source back to workflow-build is how you would restore auto-publish. (An earlier second copy served at <code>home.elevenmessenger.com/infrastructure/</code> is being retired.)</p>
+</div>
+
+</div>
+</main>
+</div>
+</body>
+</html>

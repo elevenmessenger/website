@@ -1,0 +1,160 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Day-to-day operations — Running the fleet</title>
+<link rel="stylesheet" href="guide.css" />
+<script src="guide.js" defer></script>
+</head>
+<body data-page="operations.html">
+<div class="frame">
+<nav class="side"></nav>
+<main class="content">
+<div class="wrap">
+
+<header class="top">
+  <p class="eyebrow"><span class="robot">&#129302;</span> Running the fleet &middot; Part 08 of 10</p>
+  <h1>Day-to-day operations and checks</h1>
+  <p class="thesis">This page is the runbook: <strong>the checks worth doing routinely, the log lines worth knowing, backups and how to actually restore one, moving an instance between boxes, and a table of common problems with their diagnoses.</strong> Every procedure links back to the page that explains why it works.</p>
+</header>
+
+<div class="sysmap" data-highlight="router instances services control updater backup"></div>
+<p class="sysmap-caption">You are here: everywhere. Operations cut across every component, which is why this page leans on the earlier ones for depth.</p>
+
+<h2 id="routine">The routine health check, in ninety seconds</h2>
+<figure class="cmd">
+<figcaption>Run on each box — the five questions and the commands that answer them</figcaption>
+<pre><code># 1. Are all supervised services up, and has anything been crash-looping?
+systemctl list-units 'lchat*' --failed
+systemctl status lchat-router lchat-control lchat-litestream --no-pager | grep -E 'Active|since'
+
+# 2. Does the registry agree — is every intended host ready?
+lchat instances                       # STATUS=failed rows need their last error read; CANARY=canary rows are throwaway test hosts, safe to reset/remove
+
+# 3. Is the fleet current on its release channels, and whose canaries are pinned?
+lchat update status                   # AUTO=pinned rows are someone&rsquo;s live experiment — leave them be
+                                      # (a throwaway test host is also flagged: lchat add-instance --canary, or lchat canary &lt;host&gt; --on; shows as CANARY in lchat instances)
+
+# Reset a canary to a fresh first-run (the operator-clean wipe — no `rm` in /data):
+lchat reset &lt;host&gt; --yes             # CANARY-ONLY: refuses any instance not flagged (the data-safety gate).
+                                      # Stops the unit, archives its DB to /data/trash (recoverable; env/config kept),
+                                      # restarts fresh, and prints the onboarding link. A real instance can never be reset.
+
+# 4. Is disk comfortable? (disk, not memory, is the binding resource on these boxes)
+df -h /data
+
+# 5. Does one real space answer end to end, through DNS, TLS, router, and instance?
+curl -s https://chat-a.example.com/api/version</code></pre>
+</figure>
+<p>For the fleet-wide view without logging into boxes, the public status dashboard (<a href="#observability">below</a>) publishes instance counts, awake/asleep split, capacity bands, version spread, and replication health every five minutes.</p>
+
+<h2 id="reading-logs">Reading the logs: the lines worth knowing</h2>
+<p>Everything logs to the systemd journal. The single most informative journal is the router&rsquo;s, because the activator and mesh live inside it (<a href="hibernation.html#children">part 06</a>):</p>
+<figure class="cmd">
+<figcaption>Run on the box</figcaption>
+<pre><code>journalctl -u lchat-router -f                     # follow everything: routing, certificates, wakes, sleeps
+journalctl -u lchat@chat-a.example.com -n 200     # one systemd-managed instance
+journalctl -u lchat-update.service -n 100         # what the last hourly update pass did
+journalctl -u lchat-litestream -n 50              # backup replication health</code></pre>
+</figure>
+<div class="tablewrap">
+<table>
+  <tr><th>Log line (pattern)</th><th>Meaning</th><th>Action</th></tr>
+  <tr><td><code>&lt;host&gt; waking</code> / <code>awake</code> / <code>hibernated</code></td><td>The activator&rsquo;s normal lifecycle.</td><td>None — this is the system working.</td></tr>
+  <tr><td><code>LEASE LOST &hellip; standing down</code></td><td>This box could not renew a space&rsquo;s <a href="hibernation.html#the-lease">lease</a>; it stopped serving the space, which will re-wake on the next request (possibly on another box, in a mesh).</td><td>Occasional: fine. Frequent: investigate bucket reachability and credentials.</td></tr>
+  <tr><td><code>exited unexpectedly — recycling</code></td><td>A hibernating instance&rsquo;s child process died; the activator cleaned up and the next request re-wakes it.</td><td>Check the surrounding lines for the child&rsquo;s own crash output; repeated recycling of one host means its build or data needs attention.</td></tr>
+  <tr><td><code>another deploy/rollback/update is running</code></td><td>The <a href="deploys.html#manual-deploy">deploy lock</a> refused a second concurrent operation.</td><td>Wait for the running one; if none is visibly running, look for a stuck updater pass.</td></tr>
+  <tr><td><code>poisoned</code> (in an update pass)</td><td>A channel build failed its health check on one instance, so the pass declined to try it elsewhere.</td><td>Investigate that build before the next pass; pin anything sensitive meanwhile.</td></tr>
+  <tr><td>Certificate errors mentioning <code>acme</code></td><td>Let&rsquo;s Encrypt issuance failed — usually DNS not pointing at the box, port 80 blocked, or a rate limit.</td><td>Verify DNS and port 80; for rate limits, prefer the <a href="router.html#dns01">wildcard certificate</a>.</td></tr>
+</table>
+</div>
+
+<h2 id="backups">Backups: continuous replication, and the restore you should rehearse</h2>
+<p>Every database on the box — instance databases, the registry, the home, push, and cloud databases — is <strong>continuously replicated</strong> to a dedicated backup bucket by a stock Litestream process (<code>lchat-litestream.service</code>, configuration <code>/etc/litestream.yml</code>). This is replication as a property of normal operation, not nightly snapshots: recovery-point loss is measured in seconds, and point-in-time restore is available. Three properties of the arrangement matter operationally:</p>
+<ul>
+  <li><strong>The configuration is generated, not written.</strong> <code>deploy/fleet-backup.sh</code> regenerates <code>/etc/litestream.yml</code> from what is actually in <code>/data</code>; run it after adding instances so new databases get picked up. It deliberately <strong>skips hibernating hosts</strong> — their replication belongs to the activator, and two replicators on one database corrupt each other (<a href="hibernation.html#hibernation-gotchas">part 06</a>).</li>
+  <li><strong>The bucket is the ransomware posture.</strong> It keeps old versions of every object for fourteen days, and the box&rsquo;s credentials can write objects but can never change versioning, lifecycle, or the bucket itself — so even an attacker with the box&rsquo;s own keys cannot destroy the history they overwrite.</li>
+  <li><strong>Blobs and the certificate cache ride separately.</strong> Attachment files (<code>/data/&lt;host&gt;-blobs/</code>) are immutable and content-addressed; the certificate cache (<code>/data/acme/</code>) is key material. Both belong in whatever file-level backup wraps the box.</li>
+</ul>
+<h3 id="restore">Restoring a database (rehearse this before you need it)</h3>
+<ol class="procedure">
+  <li><p class="step-title">Always restore to a scratch path — never over a live file.</p>
+  <figure class="cmd"><figcaption>Run on the box</figcaption>
+  <pre><code>litestream restore -config /etc/litestream.yml \
+  -o /tmp/restore-check/chat-a.example.com.db /data/chat-a.example.com.db
+sqlite3 /tmp/restore-check/chat-a.example.com.db "PRAGMA integrity_check"
+<span class="out">ok</span></code></pre></figure></li>
+  <li><p class="step-title">Only after verifying, swap it into place with the instance stopped.</p>
+  <figure class="cmd"><figcaption>Run on the box, as root</figcaption>
+  <pre><code>systemctl stop lchat@chat-a.example.com
+mv /data/chat-a.example.com.db /data/chat-a.example.com.db.broken
+mv /tmp/restore-check/chat-a.example.com.db /data/chat-a.example.com.db
+chown lchat:lchat /data/chat-a.example.com.db
+systemctl start lchat@chat-a.example.com</code></pre></figure></li>
+</ol>
+<p>For a <em>hibernating</em> host the parked copy in the hibernation bucket is usually the freshest state; a cold wake restores it automatically. The backup bucket is your answer when the hibernation copy itself is what was damaged.</p>
+
+<h2 id="migration">Moving an instance between boxes</h2>
+<p>Migration is data movement plus a DNS change — nothing about members&rsquo; keys or history is affected, <em>provided the hostname never changes</em> (browser encryption keys and passkeys are bound to the origin). The procedure, condensed from the repository&rsquo;s validated runbook (<code>docs/instance-migration.md</code>):</p>
+<ol class="procedure">
+  <li><p class="step-title">Recover the admin token and per-instance configuration from the source box.</p>
+  <p>Both live in <code>/data/&lt;host&gt;.env</code>. The token must be <em>preserved</em> — importing it on the destination (rather than minting fresh) is what keeps every saved admin link working.</p></li>
+  <li><p class="step-title">Snapshot the database cleanly, on the live system.</p>
+  <figure class="cmd"><figcaption>Run on the source box</figcaption>
+  <pre><code>sqlite3 /data/chat-a.example.com.db "VACUUM INTO '/tmp/chat-a-snapshot.db'"
+sqlite3 /tmp/chat-a-snapshot.db "PRAGMA integrity_check"
+<span class="out">ok</span></code></pre></figure>
+  <p><code>VACUUM INTO</code> produces a single, transaction-consistent, compacted copy and is safe against a running instance — no stop required for the snapshot itself.</p></li>
+  <li><p class="step-title">Copy three things, not one.</p>
+  <p>The snapshot to <code>/data/&lt;host&gt;.db</code> on the destination; the blob directory (<code>rsync -a /data/&lt;host&gt;-blobs/ &hellip;</code> — immutable files, safe to copy live); and the web-push key file <code>/data/&lt;host&gt;.vapid</code>, without which every browser push subscription silently breaks.</p></li>
+  <li><p class="step-title">Import on the destination, preserving the token.</p>
+  <figure class="cmd"><figcaption>Run on the destination box, with the database already in place</figcaption>
+  <pre><code>lchat add-instance chat-a.example.com \
+  --admin-token "&lt;the existing token&gt;" \
+  --push-relay-url https://push.example.com --push-relay-token "&lt;existing relay token&gt;"</code></pre></figure>
+  <p><code>add-instance</code> adopts the pre-placed database, starts the unit against it, health-checks, and reloads the router (<a href="spaces.html#adding-manual">part 05</a>). Verify over the local socket <em>before</em> touching DNS.</p></li>
+  <li><p class="step-title">Check the gap, then flip DNS.</p>
+  <p>Compare message counts between source-now and the snapshot; if the space is busy, freeze writes and re-snapshot at cutover. Lower the DNS record&rsquo;s TTL to about sixty seconds a while <em>before</em> the flip. The TLS certificate cannot be pre-issued (issuance validates over public DNS), so it issues on the first request after the flip — a few seconds, once.</p></li>
+  <li><p class="step-title">Verify, and keep the source as the instant rollback.</p>
+  <p>Leave the source instance running until you are satisfied: flipping DNS back is a complete rollback. Bot sidecars are their own step — their identity files (<code>/data/&lt;host&gt;-bot/</code>) must be copied, <em>never</em> re-provisioned with <code>add-bot</code> (that would mint duplicate bot members).</p></li>
+</ol>
+
+<h2 id="hardening">The hardening checklist (one-time per box)</h2>
+<ul>
+  <li><strong>Firewall:</strong> allow inbound 80, 443, and the WireGuard port (51820, UDP) only; default-deny the rest. SSH gets no public allow — it is permitted only <em>on the WireGuard interface</em> (<code>ufw allow in on wg0 to any port 22 proto tcp</code>). Everything internal is unix sockets, so nothing else needs a port. (Add the allows <em>before</em> enabling the firewall, and verify the tunnel from outside before removing any public SSH rule, so you do not lock out your own session.) <span class="status built">running today</span></li>
+  <li><strong>SSH rides WireGuard:</strong> each operator is a peer on the box&rsquo;s <code>wg0</code> interface and connects to the box&rsquo;s tunnel address; the tunnel runs persistently on the operator&rsquo;s machine with an <code>ssh</code> configuration alias, so every existing command works unchanged. WireGuard does not answer unauthenticated packets, so the SSH port is invisible to scanners and brute-force noise drops to zero. Key-only remains in force (<code>PasswordAuthentication no</code>). The full recipe, including the break-glass path through the hosting provider&rsquo;s rescue console, is in <code>docs/instance-router.md</code> under Hardening. <span class="status built">running today</span></li>
+  <li><strong>Root SSH is bootstrap-only:</strong> the first root session bootstraps the box and creates named operator accounts (group <code>lchat-operators</code>), installs the committed sudo allowlist (<code>deploy/sudoers-operators</code> &rarr; <code>/etc/sudoers.d/lchat-operators</code>) and the <code>lchat-env-install</code> helper for placing secrets, then sets <code>PermitRootLogin no</code>. From then on operators are named users whose root capability is exactly the allowlist — anything new that needs root gets an allowlist line through a reviewed pull request, never a root shell. This is accident-proofing and attribution with a reviewable surface, not a hard security boundary (the allowlist can deploy binaries); the hard boundary is the WireGuard key. <span class="status built">running today</span></li>
+  <li><strong>Automatic security updates</strong> for the operating system (<code>unattended-upgrades</code>) — the application updates itself (<a href="deploys.html#auto-updates">part 04</a>), but the kernel and OpenSSL do not.</li>
+  <li><strong>Pin the box&rsquo;s own hostnames to loopback</strong> in <code>/etc/hosts</code>, so on-box clients (bot sidecars, calls to the push relay) reach the local router instead of the public internet — and disable any cloud-image behaviour that regenerates that file on boot. The subtle failure this prevents is described in <a href="processes.html#bot-sidecars">part 03</a>.</li>
+  <li><strong>The unit files already sandbox every service</strong> (<a href="processes.html#security-model">part 03</a>) — nothing to do, but worth knowing when something cannot write where you expected: <code>ProtectSystem=strict</code> means the whole filesystem is read-only to services except <code>/data</code> and <code>/run/lchat</code>.</li>
+</ul>
+
+<h2 id="observability">What you can observe, and what you cannot yet</h2>
+<p>A status publisher on one box regenerates a set of public dashboards every five minutes, including a fleet page whose data file (<code>fleet.json</code>) reports: total, systemd-managed, and hibernating instance counts; how many hibernators are awake versus asleep <em>fleet-wide</em> at this moment; the software version spread; up/down booleans for the sibling services; backup-replication health with its lag in seconds; and a coarse capacity band. The capacity band — <code>plenty</code>, <code>getting-full</code>, or <code>at-capacity</code> — is the worst of several internal signals (instance count against the cap, registered rows against the row ceiling, disk against the floor, memory), and deliberately <em>only the band word is published</em>: never counts of slots, gigabytes, percentages, hostnames, or addresses. The same discipline runs through everything public: aggregate numbers and band words, nothing that identifies a machine or a member.</p>
+<p>In a <a href="mesh.html">mesh</a>, the dashboard aggregates across every live box, not just the one running the publisher. Each mesh member — including that one — publishes its own capacity snapshot as a sibling object next to its membership heartbeat, on a slower (one-minute) cadence; the publisher reads every live peer&rsquo;s snapshot back over the same S3 substrate the mesh already uses, no new box-to-box port involved. Each box&rsquo;s own reported awake/asleep count is filtered to the hosts it currently owns by the mesh&rsquo;s <a href="mesh.html#placement">placement hash</a> — so a host that has been re-homed to a peer is never reported as &ldquo;asleep&rdquo; by more than one box at once, and the fleet page&rsquo;s <code>hosts</code> array lists every box exactly once, each with its own whimsical, hash-derived label (never a hostname or address) and, optionally, an operator-set coarse region (<code>LCHAT_BOX_REGION</code>, &ldquo;EU &middot; Finland&rdquo;-shaped — continent and country only).</p>
+<div class="roadmap">
+  <span class="label">Designed, not built: real metrics</span>
+  <p>Wake latency, lease conflicts, and replication lag exist today as <em>log lines</em>, not as queryable metrics with alerting. The design owes an end-to-end-encryption-safe metrics discipline; until it lands, trend questions (&ldquo;are wakes getting slower?&rdquo;) are answered by reading journals, and the five-minute dashboard is the only aggregation. Budget your expectations accordingly.</p>
+</div>
+
+<h2 id="troubleshooting">Common problems and their diagnoses</h2>
+<div class="tablewrap">
+<table>
+  <tr><th>Symptom</th><th>Likely cause</th><th>Diagnosis and fix</th></tr>
+  <tr><td><code>lchat instances</code> shows a host as <code>failed</code></td><td>Its creation or last restart did not become healthy in time.</td><td>Read the row&rsquo;s <code>last error</code> line, then the instance&rsquo;s journal. The files are left in place on failure; fixing the cause and re-running the operation is safe.</td></tr>
+  <tr><td>A hibernating host&rsquo;s first wake fails with a permission error</td><td>Its environment file is root-owned (the activator reads it unprivileged).</td><td><code>chown lchat:lchat /data/&lt;host&gt;.env</code> — and note the flip commands do this themselves now; hand-copied files are the remaining way to hit it. See <a href="hibernation.html#hibernation-gotchas">part 06</a>.</td></tr>
+  <tr><td>A burst of 503 responses on one host</td><td>Wake contention: a lease held elsewhere, or a wake exceeding its budget.</td><td>Check the router journal for lease messages. In a mesh, confirm both boxes see the same membership (<a href="mesh.html#membership">list the heartbeats</a>). Occasional 503s during wakes are by design; sustained ones are not.</td></tr>
+  <tr><td>A bot stops answering after a migration or DNS change</td><td>The sidecar dials the public hostname, and the box resolves it to the wrong place.</td><td>Verify the <code>/etc/hosts</code> loopback pin on the box that runs the sidecar; restart the sidecar unit. See <a href="processes.html#bot-sidecars">part 03</a>.</td></tr>
+  <tr><td><code>deploy</code> or <code>update</code> refuses: &ldquo;another deploy&hellip; is running&rdquo;</td><td>The deploy lock is held.</td><td>Usually a genuinely running hourly pass — check <code>systemctl status lchat-update.service</code>; a timer pass that lost the lock simply retries next hour.</td></tr>
+  <tr><td>A new hostname will not get a certificate</td><td>DNS not pointing at the box, port 80 unreachable, or the host missing from the registry (the router refuses to request certificates for unknown hosts).</td><td><code>dig &lt;host&gt;</code>, check the firewall, check <code>lchat instances</code>. See <a href="router.html#tls">part 02</a>.</td></tr>
+  <tr><td>Web push notifications silently stopped for one instance</td><td>Its <code>/data/&lt;host&gt;.vapid</code> key file was lost in a move, so it re-minted keys and orphaned subscriptions.</td><td>Restore the original file from backup if possible; otherwise members&rsquo; browsers re-subscribe over time. Prevent it by always copying the file during <a href="#migration">migration</a>.</td></tr>
+  <tr><td>Disk filling up</td><td>Attachments (blobs) — the one thing that grows with use.</td><td><code>du -sh /data/*-blobs</code> to find the heavy spaces; storage quotas per space are settable through the control daemon (<a href="spaces.html#controld">part 05</a>). Old builds are garbage-collected automatically and are rarely the cause.</td></tr>
+</table>
+</div>
+
+</div>
+</main>
+</div>
+</body>
+</html>

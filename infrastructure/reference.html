@@ -1,0 +1,251 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Complete reference — Running the fleet</title>
+<link rel="stylesheet" href="guide.css" />
+<script src="guide.js" defer></script>
+</head>
+<body data-page="reference.html">
+<div class="frame">
+<nav class="side"></nav>
+<main class="content">
+<div class="wrap">
+
+<header class="top">
+  <p class="eyebrow"><span class="robot">&#129302;</span> Running the fleet &middot; Part 10 of 10</p>
+  <h1>Complete reference: commands, files, variables</h1>
+  <p class="thesis">Everything in one place, for looking up rather than reading through: <strong>every operator command with its flags, every environment variable with its default, every file path, every systemd unit, and the glossary.</strong> Each entry links back to the page that explains it.</p>
+</header>
+
+<div class="sysmap" data-highlight=""></div>
+<p class="sysmap-caption">The map one last time, unhighlighted. If a term below is unfamiliar, the <a href="#glossary">glossary</a> at the bottom of this page defines it.</p>
+
+<h2 id="commands">Command reference: the <code>lchat</code> control commands</h2>
+<p>All of these run on a box (over <code>ssh</code>, which rides the WireGuard tunnel — <a href="operations.html#hardening">part 08</a>), as a named operator invoking <code>/opt/lchat/lchat</code> through the committed sudo allowlist (root SSH is for first bootstrap only). Common conventions: <code>&lt;host&gt;</code> is always a full domain name; flags may come before or after the host; most commands accept <code>--registry &lt;path&gt;</code> to point at a non-default registry (you will essentially never need it — the default is <code>/data/registry.db</code>).</p>
+
+<h3 id="cmd-lifecycle">Box and instance lifecycle</h3>
+<dl>
+  <dt><code>lchat bootstrap</code></dt>
+  <dd>One-time box setup: writes every systemd unit file, creates the <code>lchat</code> system user and the <code>/data</code>, <code>/run/lchat</code>, and certificate-cache directories, mints the root-only control token, enables and starts the router and the hourly update timer. Idempotent — safe to re-run to refresh unit files. Explained in <a href="deploys.html#bootstrap">part 04</a>.</dd>
+  <dt><code>lchat add-instance &lt;host&gt; [--admin-token &lt;tok&gt;] [--hibernate] [--app-store-url &lt;url&gt;] [--home-origin &lt;url&gt;] [--push-relay-url &lt;url&gt;] [--push-relay-token &lt;tok&gt;]</code></dt>
+  <dd>Creates a space: mints (or, with <code>--admin-token</code>, imports) the admin token, writes <code>/data/&lt;host&gt;.env</code>, registers the route, points the version link, starts and health-checks the unit (skipped with <code>--hibernate</code>), reloads the router, warms the certificate, and prints the one-time setup link and the admin link. Explained in <a href="spaces.html#adding-manual">part 05</a>.</dd>
+  <dt><code>lchat add-service &lt;host&gt; --socket &lt;path&gt;</code></dt>
+  <dd>Registers a <code>service</code>-kind route (home server, push relay, cloud provisioner, or any third-party backend) after verifying the socket answers. No unit is created and no version is tracked — the router only forwards. Explained in <a href="processes.html#sibling-services">part 03</a>.</dd>
+  <dt><code>lchat add-bot &lt;host&gt; [--model &lt;model&gt;]</code></dt>
+  <dd>Provisions the bot sidecar for an instance: mints one agent invite per identity, writes <code>/data/&lt;host&gt;-bot.env</code> and the session directory, and enables <code>lchat-bot@&lt;host&gt;</code> (on a hibernating host the unit is skipped; the activator co-spawns instead). Reads <code>ANTHROPIC_API_KEY</code> from the calling environment if AI behaviour is wanted. Explained in <a href="processes.html#bot-sidecars">part 03</a>.</dd>
+  <dt><code>lchat add-hooks &lt;host&gt;</code> <span class="status partial">built, not yet deployed</span></dt>
+  <dd>Provisions the webhook-ingest sidecar for an instance (incoming webhooks, issue #610): mints the service identity&rsquo;s agent invite, writes <code>/data/&lt;host&gt;-hooks.env</code> and the session directory, registers the <code>in.&lt;host&gt;</code> registry route (kind <code>hooks</code>) pointing at <code>/run/lchat/&lt;host&gt;-hooks.sock</code>, and enables <code>lchat-hooks@&lt;host&gt;</code>. Admins then create webhooks from the app&rsquo;s Webhooks panel. Design and trust model: <code>docs/webhooks.md</code>.</dd>
+  <dt><code>lchat remove &lt;host&gt; [--stop]</code></dt>
+  <dd>Deletes the host&rsquo;s registry row and reloads the router (traffic stops); with <code>--stop</code> also stops and disables the instance and sidecar units. <strong>Never touches data.</strong> Explained in <a href="spaces.html#removing">part 05</a>.</dd>
+  <dt><code>lchat hibernate &lt;host&gt; --on | --off</code></dt>
+  <dd>Moves one host between systemd management and activator management, in either direction, safely ordered so the host is never unserveable. Requires the router to be running with a hibernation bucket for <code>--on</code>. Explained in <a href="hibernation.html#host-switch">part 06</a>.</dd>
+  <dt><code>lchat replication &lt;host&gt; [stream | batched | daily]</code></dt>
+  <dd>Reads (no argument) or sets a hibernating host&rsquo;s <a href="hibernation.html#replication-classes">replication class</a> — how often awake writes sync to the bucket. A set reloads the router and applies at the host&rsquo;s next wake; on provisioned fleets billing drives this instead. Explained in <a href="hibernation.html#replication-classes">part 06</a>.</dd>
+  <dt><code>lchat instances</code></dt>
+  <dd>Prints the registry: HOST, KIND, STATUS, VERSION, HIBERNATE, REPLICATION, SOCKET, plus a <code>last error</code> line for any failed row. The first stop for &ldquo;what does this box think it is serving?&rdquo;.</dd>
+  <dt><code>lchat mesh-seed &lt;peer-url&gt;</code></dt>
+  <dd>Run on an existing mesh box, pointed at a newly joined one: bulk-replicates every in-scope hibernating route to the peer in one pass, authenticated by <code>LCHAT_MESH_TOKEN</code>. The one-time catch-up step of <a href="mesh.html#add-box">adding a box to the mesh</a>. <a href="mesh.html#mesh-replication">Part 07</a>.</dd>
+  <dt><code>lchat admin-link &lt;host&gt;</code> / <code>lchat setup-invite &lt;host&gt;</code></dt>
+  <dd>Recover the admin link (from the environment file — the only plaintext copy of the token) / mint a fresh one-time setup invite.</dd>
+</dl>
+
+<h3 id="cmd-deploy">Versions and deploys</h3>
+<dl>
+  <dt><code>lchat stage --file &lt;binary&gt; [--version &lt;ver&gt;]</code></dt>
+  <dd>Copies a built binary into the version store under its build identifier (asked of the binary itself unless overridden). Inert and always safe. <a href="deploys.html#manual-deploy">Part 04</a>.</dd>
+  <dt><code>lchat deploy &lt;host&gt;|--all [--version &lt;ver&gt;] [--pin] [--include-pinned]</code></dt>
+  <dd>With <code>--version</code>: repoint the host&rsquo;s live link, restart, poll <code>/api/version</code> for the exact build, auto-roll-back on mismatch, restart the bot sidecar. Without: restart on the current build. <code>--all</code> rolls one host at a time, stops on first failure, and skips pinned hosts unless <code>--include-pinned</code>. <code>--pin</code> (single host + version only) freezes the host there. Hibernating hosts: pure repoint, effective at next wake. <a href="deploys.html#manual-deploy">Part 04</a>.</dd>
+  <dt><code>lchat rollback &lt;host&gt; | --all</code></dt>
+  <dd>Repoints to the recorded previous version, restarts, health-checks, and swaps current/previous (so rollback twice returns forward). <a href="deploys.html#rollback">Part 04</a>.</dd>
+  <dt><code>lchat init-versions [--from &lt;binary&gt;]</code></dt>
+  <dd>One-time adoption when moving an existing box onto versioned deploys: stages a seed build and creates missing live links. Idempotent; never repoints an existing link.</dd>
+  <dt><code>lchat update run [--dry-run]</code> / <code>status</code> / <code>pin &lt;host&gt; [&lt;ver&gt;]</code> / <code>unpin &lt;host&gt;</code></dt>
+  <dd>One updater pass (what the hourly timer fires) / the fleet update table (HOST, CHANNEL, AUTO, CURRENT, AVAILABLE) / freeze a host on a version / resume its channel. <a href="deploys.html#auto-updates">Part 04</a>.</dd>
+  <dt><code>lchat version</code></dt>
+  <dd>Prints the binary&rsquo;s own build identifier (also served by every instance at <code>GET /api/version</code> as <code>build</code>).</dd>
+</dl>
+
+<h3 id="cmd-daemons">Daemons and utilities</h3>
+<dl>
+  <dt><code>lchat router</code></dt>
+  <dd>The router process itself — run by <code>lchat-router.service</code>, not by hand. Flags <code>--registry</code>, <code>--acme-cache</code>, <code>--https</code>, <code>--http</code>, <code>--fallback-url</code>, <code>--wildcard-domains</code>. <a href="router.html">Part 02</a>.</dd>
+  <dt><code>lchat controld</code></dt>
+  <dd>The root-only control daemon — run by <code>lchat-control.service</code>. Flags/env for socket, token file, and capacity policy are under <a href="#env-control">environment variables</a>. <a href="spaces.html#controld">Part 05</a>.</dd>
+  <dt><code>lchat cloud --socket &lt;path&gt; --db &lt;path&gt;</code></dt>
+  <dd>The self-serve provisioner — run by <code>lchat-cloud.service</code>. <a href="spaces.html#cloud">Part 05</a>.</dd>
+  <dt><code>lchat bot run [--base &lt;url&gt;]</code> / <code>lchat bot provision</code></dt>
+  <dd>Run a bot sidecar (with no arguments, configuration comes from the unit&rsquo;s environment file) / claim an agent invite into a session file. <a href="processes.html#bot-sidecars">Part 03</a>.</dd>
+  <dt><code>lchat release keygen|sign|verify|payload</code></dt>
+  <dd>The release-feed signing plumbing — used by the publishing pipeline, not in box operation. <a href="deploys.html#signing">Part 04</a>.</dd>
+</dl>
+
+<h2 id="env">Environment variable reference</h2>
+<p>Grouped by the file each is read from. All files are plain <code>KEY=value</code> lines, mode 0600, under <code>/data/</code> unless noted.</p>
+
+<h3 id="env-router">The router — <code>/data/router.env</code></h3>
+<div class="tablewrap">
+<table>
+  <tr><th>Variable</th><th>Default</th><th>Meaning</th></tr>
+  <tr><td><code>LCHAT_REGISTRY</code></td><td><code>/data/registry.db</code></td><td>The registry database.</td></tr>
+  <tr><td><code>LCHAT_ACME_CACHE</code></td><td><code>/data/acme</code></td><td>Certificate cache directory.</td></tr>
+  <tr><td><code>LCHAT_HTTPS_ADDR</code> / <code>LCHAT_HTTP_ADDR</code></td><td><code>:443</code> / <code>:80</code></td><td>Public listen addresses.</td></tr>
+  <tr><td><code>LCHAT_FALLBACK_URL</code></td><td>unset (404)</td><td>Redirect target for unknown hostnames.</td></tr>
+  <tr><td><code>LCHAT_WILDCARD_DOMAINS</code></td><td>unset</td><td>Comma list of domains to hold wildcard certificates for (needs the next variable). <a href="router.html#dns01">Part 02</a>.</td></tr>
+  <tr><td><code>LCHAT_DNSIMPLE_TOKEN</code></td><td>unset</td><td>DNS-provider API token used for wildcard issuance.</td></tr>
+  <tr><td><code>LCHAT_HIBERNATE_BUCKET</code></td><td>unset (activator off)</td><td>The hibernation bucket — the activator&rsquo;s master switch. <a href="hibernation.html#activator-config">Part 06</a>.</td></tr>
+  <tr><td><code>LCHAT_HIBERNATE_REGION</code> / <code>LCHAT_HIBERNATE_PREFIX</code></td><td>empty</td><td>Bucket region / key prefix.</td></tr>
+  <tr><td><code>LCHAT_HIBERNATE_IDLE</code></td><td><code>15m</code></td><td>Idle window before sleep (a duration such as <code>15m</code> or <code>90s</code>; must be positive).</td></tr>
+  <tr><td><code>LCHAT_MESH_SELF</code></td><td>unset (mesh off)</td><td>This box&rsquo;s peer-reachable base URL — the mesh&rsquo;s master switch. <a href="mesh.html#mesh-config">Part 07</a>.</td></tr>
+  <tr><td><code>LCHAT_MESH_DOMAINS</code></td><td>unset</td><td>Comma list of domains whose hosts participate in mesh placement. Required whenever <code>LCHAT_MESH_SELF</code> is set.</td></tr>
+  <tr><td><code>LCHAT_MESH_TOKEN</code></td><td>unset</td><td>Shared secret authenticating route replication between mesh members. Required whenever <code>LCHAT_MESH_SELF</code> is set; identical on every box. <a href="mesh.html#mesh-config">Part 07</a>.</td></tr>
+  <tr><td><code>LCHAT_BOX_REGION</code></td><td>unset (omitted)</td><td>This box&rsquo;s coarse continent + country string, published to peers over the mesh stats channel for the Fleet dashboard&rsquo;s <code>region</code> field (e.g. &ldquo;EU &middot; Finland&rdquo;) — never a city, datacenter, IP, or hostname. <a href="operations.html#observability">Part 08</a>.</td></tr>
+</table>
+</div>
+
+<h3 id="env-instance">Each instance — <code>/data/&lt;host&gt;.env</code></h3>
+<div class="tablewrap">
+<table>
+  <tr><th>Variable</th><th>Meaning</th></tr>
+  <tr><td><code>LCHAT_ADMIN_TOKEN</code></td><td>The instance&rsquo;s admin token. The database stores only its hash; <strong>this file is the only recoverable copy</strong>.</td></tr>
+  <tr><td><code>LCHAT_APP_STORE_URL</code>, <code>LCHAT_HOME_ORIGIN</code>, <code>LCHAT_PUSH_RELAY_URL</code>, <code>LCHAT_PUSH_RELAY_TOKEN</code></td><td>Per-instance pointers to the app-store listing, the home server, and the push relay (with its per-instance bearer token).</td></tr>
+  <tr><td><code>LCHAT_BLOB_QUOTA_BYTES</code></td><td>Attachment-storage cap for the space (written by the control daemon&rsquo;s quota endpoint; uploads beyond it are refused).</td></tr>
+  <tr><td><code>LCHAT_BLOB_S3_BUCKET</code> (+ <code>_PREFIX</code>, <code>_REGION</code>, <code>_ENDPOINT</code>, <code>_ACCESS_KEY</code>, <code>_SECRET_KEY</code>)</td><td>Attachment bytes in an S3-compatible object store. Set = new uploads land there, the on-disk dir keeps serving pre-flip blobs; unset = today&rsquo;s disk layout. Prefix defaults to the host; key pair falls back to the AWS default chain. <span class="status partial">built, not yet flipped</span></td></tr>
+  <tr><td><code>LCHAT_BLOB_S3_MIRROR_*</code> (same six)</td><td>A second copy on a second provider (federated blobs Phase A — <code>docs/federated-blob-storage.md</code>): an idempotent sweep mirrors every store-backed blob, reads chain primary&rarr;mirror&rarr;disk, deletes reap both, and an hourly audit spot-checks both stores against each blob&rsquo;s recorded sha256. Requires the primary. Changing the mirror <em>target</em> later: <code>UPDATE blobs SET mirrored_at=0</code> re-mirrors everything. <span class="status partial">built, not yet flipped</span></td></tr>
+</table>
+</div>
+
+<h3 id="env-control">The control daemon — <code>/data/control.env</code></h3>
+<div class="tablewrap">
+<table>
+  <tr><th>Variable</th><th>Default</th><th>Meaning</th></tr>
+  <tr><td><code>LCHAT_MAX_INSTANCES</code></td><td>40</td><td>Ceiling on running (materialised) instances.</td></tr>
+  <tr><td><code>LCHAT_MIN_FREE_GB</code></td><td>5</td><td>Disk floor; creations refuse below it.</td></tr>
+  <tr><td><code>LCHAT_CONTROL_HIBERNATE_CREATES</code></td><td>off</td><td><code>1</code> = every provisioner-created space is born hibernating. <a href="spaces.html#hibernating-creates">Part 05</a>.</td></tr>
+  <tr><td><code>LCHAT_MAX_REGISTERED</code></td><td>0 (= 10 &times; max instances)</td><td>Row ceiling counting hibernating registrations.</td></tr>
+  <tr><td><code>LCHAT_TRASH_KEEP_DAYS</code></td><td>0 (keep forever)</td><td>Age at which archived (deleted) spaces in <code>/data/trash</code> are purged.</td></tr>
+  <tr><td><code>LCHAT_CONTROL_HOME_ORIGIN</code></td><td>empty (compiled production default)</td><td>Default <code>LCHAT_HOME_ORIGIN</code> for provisioner creates that name none — set on non-production fleets so their spaces point at the right home server (backup nudges, the demo banner's live status read).</td></tr>
+  <tr><td><code>LCHAT_CONTROL_SOCKET</code> / <code>LCHAT_CONTROL_TOKEN_FILE</code></td><td><code>/run/lchat/control.sock</code> / <code>/etc/lchat/control.token</code></td><td>Where it listens / the root-only bearer token gating it.</td></tr>
+</table>
+</div>
+
+<h3 id="env-cloud">The cloud provisioner — <code>/data/cloud.env</code></h3>
+<div class="tablewrap">
+<table>
+  <tr><th>Variable</th><th>Default</th><th>Meaning</th></tr>
+  <tr><td><code>LCHAT_ADMIN_TOKEN</code></td><td>required</td><td>Gates the caller-token minting API.</td></tr>
+  <tr><td><code>LCHAT_CLOUD_BASE_DOMAIN</code></td><td>required</td><td>Domain new spaces are created under (needs wildcard DNS).</td></tr>
+  <tr><td><code>LCHAT_CLOUD_QUOTA</code></td><td>3</td><td>Free spaces each requesting user may hold at once.</td></tr>
+  <tr><td><code>LCHAT_CLOUD_MAX_CREATES_PER_DAY</code></td><td>0 (uncapped)</td><td>Fleet-wide daily creation circuit breaker.</td></tr>
+  <tr><td><code>LCHAT_CLOUD_REAP_AFTER_DAYS</code></td><td>0 (reaper off)</td><td>Age before a never-claimed space is reclaimable. <a href="spaces.html#reaper">Part 05</a>.</td></tr>
+  <tr><td><code>LCHAT_CLOUD_REAP_INTERVAL_HOURS</code> / <code>LCHAT_CLOUD_REAP_MAX_PER_SWEEP</code> / <code>LCHAT_CLOUD_REAP_DRY_RUN</code></td><td>6 / 5 / off</td><td>Reaper sweep cadence / per-sweep cap / log-only mode.</td></tr>
+  <tr><td><code>LCHAT_CLOUD_STORAGE_CAPS</code>, <code>LCHAT_STRIPE_*</code></td><td>unset</td><td>Per-tier storage caps and the dormant billing rails. <span class="status partial">partially built</span></td></tr>
+  <tr><td><code>LCHAT_CLOUD_REPLICATION_CLASSES</code></td><td>unset (every space streams)</td><td>Per-tier durability rungs, e.g. <code>free=daily,family=daily,community=batched,business=stream</code>. <a href="hibernation.html#replication-classes">Part 06</a>.</td></tr>
+</table>
+</div>
+
+<h3 id="env-other">Other files</h3>
+<div class="tablewrap">
+<table>
+  <tr><th>File</th><th>Notable variables</th></tr>
+  <tr><td><code>/data/&lt;host&gt;-bot.env</code></td><td><code>LCHAT_BASE</code> (the instance&rsquo;s public URL), the per-identity session paths, optional <code>ANTHROPIC_API_KEY</code> and <code>LCHAT_MODEL</code>. <a href="processes.html#bot-sidecars">Part 03</a>.</td></tr>
+  <tr><td><code>/data/update.env</code></td><td><code>LCHAT_UPDATE_MANIFEST_URL</code> (point a box at a different release feed); mirror fallback via <code>LCHAT_RELEASE_MIRROR_URL</code>. <a href="deploys.html#signing">Part 04</a>.</td></tr>
+  <tr><td><code>/data/home.env</code> (required)</td><td><code>LCHAT_HOME_ORIGIN</code> (the passkey origin — must never change), <code>LCHAT_CLOUD_URL</code> + <code>LCHAT_CLOUD_TOKEN</code> (enables self-serve creation), <code>LCHAT_HOME_STORE</code> (<code>sqlite</code> default, or <code>s3</code> with <code>LCHAT_HOME_S3_BUCKET</code>/<code>_REGION</code>).</td></tr>
+  <tr><td><code>/data/push.env</code> (required)</td><td>The Apple push signing key and its identifiers — the one copy in the fleet, plus the relay&rsquo;s admin token.</td></tr>
+</table>
+</div>
+
+<h2 id="paths">File path reference</h2>
+<div class="tablewrap">
+<table>
+  <tr><th>Path</th><th>What it is</th><th>Back up?</th></tr>
+  <tr><td><code>/opt/lchat/lchat</code>, <code>/opt/lchat/home</code>, <code>/opt/lchat/push</code></td><td>The binaries.</td><td>No — rebuildable.</td></tr>
+  <tr><td><code>/opt/lchat/versions/&lt;ver&gt;/lchat</code></td><td>The version store (every staged build).</td><td>No.</td></tr>
+  <tr><td><code>/opt/lchat/live/&lt;host&gt;</code></td><td>The per-instance version pointer (a symlink). <em>Which build a host runs.</em></td><td>No (recorded in the registry).</td></tr>
+  <tr><td><code>/data/&lt;host&gt;.db</code> (+ <code>-wal</code>, <code>-shm</code>)</td><td>A space&rsquo;s entire database (ciphertext).</td><td><strong>Yes</strong> — continuously, via the backup replicator.</td></tr>
+  <tr><td><code>/data/&lt;host&gt;.env</code></td><td>A space&rsquo;s configuration and its only plaintext admin token.</td><td><strong>Yes.</strong></td></tr>
+  <tr><td><code>/data/&lt;host&gt;-blobs/</code></td><td>A space&rsquo;s encrypted attachments.</td><td><strong>Yes</strong> (file-level).</td></tr>
+  <tr><td><code>/data/&lt;host&gt;.vapid</code></td><td>A space&rsquo;s web-push key. Losing it breaks push subscriptions.</td><td><strong>Yes.</strong></td></tr>
+  <tr><td><code>/data/&lt;host&gt;-bot.env</code>, <code>/data/&lt;host&gt;-bot/</code></td><td>Bot sidecar configuration and identities.</td><td><strong>Yes.</strong></td></tr>
+  <tr><td><code>/data/registry.db</code></td><td>The box&rsquo;s routing table and instance ledger.</td><td><strong>Yes.</strong></td></tr>
+  <tr><td><code>/data/acme/</code></td><td>TLS certificates and their private keys.</td><td>Yes (or accept re-issuance).</td></tr>
+  <tr><td><code>/data/trash/&lt;host&gt;-&lt;timestamp&gt;/</code></td><td>Archived deleted spaces.</td><td>Optional.</td></tr>
+  <tr><td><code>/run/lchat/*.sock</code></td><td>The unix sockets (transient).</td><td>No.</td></tr>
+  <tr><td><code>/etc/lchat/control.token</code></td><td>The root-only control-daemon secret.</td><td><strong>Yes</strong> (secretly).</td></tr>
+  <tr><td><code>/etc/litestream.yml</code></td><td>Generated backup-replication configuration.</td><td>No — regenerate with <code>deploy/fleet-backup.sh</code>.</td></tr>
+  <tr><td><code>s3://&lt;bucket&gt;/&lt;prefix&gt;/&lt;host&gt;/</code></td><td>A hibernating space&rsquo;s parked database and its <code>lock.json</code> lease.</td><td>The bucket&rsquo;s own versioning covers it.</td></tr>
+  <tr><td><code>s3://&lt;bucket&gt;/&lt;prefix&gt;/mesh/members/</code></td><td>The mesh membership heartbeats.</td><td>No — transient by design.</td></tr>
+</table>
+</div>
+
+<h2 id="units">systemd unit reference</h2>
+<p>Covered in narrative form in <a href="processes.html#census">part 03</a>; the lookup table:</p>
+<div class="tablewrap">
+<table>
+  <tr><th>Unit</th><th>Runs</th><th>Enabled by</th><th>Journal</th></tr>
+  <tr><td><code>lchat-router.service</code></td><td>The router (+ activator + mesh)</td><td><code>bootstrap</code></td><td><code>journalctl -u lchat-router</code></td></tr>
+  <tr><td><code>lchat@&lt;host&gt;.service</code></td><td>One instance</td><td><code>add-instance</code></td><td><code>journalctl -u 'lchat@&lt;host&gt;'</code></td></tr>
+  <tr><td><code>lchat-bot@&lt;host&gt;.service</code></td><td>One bot sidecar</td><td><code>add-bot</code></td><td><code>journalctl -u 'lchat-bot@&lt;host&gt;'</code></td></tr>
+  <tr><td><code>lchat-hooks@&lt;host&gt;.service</code></td><td>One webhook-ingest sidecar</td><td><code>add-hooks</code></td><td><code>journalctl -u 'lchat-hooks@&lt;host&gt;'</code></td></tr>
+  <tr><td><code>lchat-home.service</code> / <code>lchat-push.service</code></td><td>Home server / push relay</td><td>manually, once</td><td><code>journalctl -u lchat-home</code> etc.</td></tr>
+  <tr><td><code>lchat-control.service</code></td><td>Control daemon (root)</td><td>manually, once</td><td><code>journalctl -u lchat-control</code></td></tr>
+  <tr><td><code>lchat-cloud.service</code></td><td>Cloud provisioner</td><td>manually, once</td><td><code>journalctl -u lchat-cloud</code></td></tr>
+  <tr><td><code>lchat-update.timer</code> &rarr; <code>.service</code></td><td>Hourly update pass (root)</td><td><code>bootstrap</code></td><td><code>journalctl -u lchat-update.service</code></td></tr>
+  <tr><td><code>lchat-litestream.service</code></td><td>Fleet backup replicator</td><td><code>deploy/fleet-backup.sh</code></td><td><code>journalctl -u lchat-litestream</code></td></tr>
+</table>
+</div>
+
+<h2 id="endpoints">Health and inspection endpoints</h2>
+<div class="tablewrap">
+<table>
+  <tr><th>Endpoint</th><th>On</th><th>Returns</th></tr>
+  <tr><td><code>GET /api/version</code></td><td>Every instance (no authentication)</td><td><code>{"version": &lt;frontend build&gt;, "build": &lt;binary build id&gt;}</code> — the health check deploys poll.</td></tr>
+  <tr><td><code>GET /healthz</code></td><td>The cloud provisioner</td><td><code>ok</code>.</td></tr>
+  <tr><td><code>GET /api/next-due</code> / <code>POST /api/charter-next-due</code></td><td>Every instance (token-gated, used by the activator and sidecar)</td><td>The earliest scheduled delivery — the machinery behind <a href="hibernation.html#due-time-wakes">scheduled wakes</a>. Not an operator surface.</td></tr>
+</table>
+</div>
+
+<h2 id="glossary">Glossary</h2>
+<dl>
+  <dt id="gloss-space">space / instance / host</dt>
+  <dd>One chat group; its server-side unit (one process + one SQLite database + one subdomain); and that subdomain itself, which names everything belonging to the instance. See <a href="index.html#vocabulary">the vocabulary table</a>.</dd>
+  <dt id="gloss-box">box</dt>
+  <dd>One Linux server in the fleet, running the router and everything in <a href="processes.html">part 03</a>.</dd>
+  <dt id="gloss-systemd">systemd</dt>
+  <dd>The standard Linux service manager: it starts processes at boot, restarts them when they crash, applies sandboxing, and keeps their logs (the &ldquo;journal&rdquo;). Controlled with <code>systemctl</code>, read with <code>journalctl</code>.</dd>
+  <dt id="gloss-unit">unit / template unit</dt>
+  <dd>A systemd service definition; a template unit (name containing <code>@</code>) is stamped out per instance name, which is how one file defines the service for every chat space.</dd>
+  <dt id="gloss-unix-socket">unix socket</dt>
+  <dd>A file (here under <code>/run/lchat/</code>) that local processes connect to like a network address. Invisible to the network — the reason instances need no firewall rules of their own.</dd>
+  <dt id="gloss-registry">the registry</dt>
+  <dd>The SQLite file <code>/data/registry.db</code>: one row per hostname a box serves. The router&rsquo;s routing table and the fleet commands&rsquo; ledger. <a href="router.html#the-registry">Part 02</a>.</dd>
+  <dt id="gloss-dns">DNS / wildcard DNS</dt>
+  <dd>The system translating names to network addresses. A <em>wildcard</em> record (<code>*.example.com</code>) points every subdomain at once, which is why creating a space needs no DNS step.</dd>
+  <dt id="gloss-le">Let&rsquo;s Encrypt / ACME / HTTP-01 / DNS-01</dt>
+  <dd>The free certificate authority and its automated issuance protocol. HTTP-01 proves control of a hostname by answering a challenge on port 80 (used per host); DNS-01 proves control of a whole domain via a temporary DNS record (used for wildcard certificates). <a href="router.html#tls">Part 02</a>.</dd>
+  <dt id="gloss-s3">object storage / S3 / bucket / prefix</dt>
+  <dd>Storage addressed as named objects in a &ldquo;bucket&rdquo; rather than files on a disk — durable, replicated, and shared. A &ldquo;prefix&rdquo; is the leading part of object names, used like a directory. Amazon S3 is the implementation used here.</dd>
+  <dt id="gloss-litestream">Litestream</dt>
+  <dd>A tool that continuously streams a SQLite database&rsquo;s changes into object storage, allowing restore to any recent moment. Used twice in this system, in two forms: a stock copy for <a href="operations.html#backups">fleet backups</a>, and embedded inside the router for <a href="hibernation.html#the-lease">hibernation</a>.</dd>
+  <dt id="gloss-lease">the lease</dt>
+  <dd>The per-space lock object (<code>lock.json</code>) in the hibernation bucket, held while a process serves the space and renewed every few minutes. The system&rsquo;s single source of truth about who may write a space&rsquo;s data. <a href="hibernation.html#the-lease">Part 06</a>.</dd>
+  <dt id="gloss-replication-class">replication class</dt>
+  <dd>A hibernating host&rsquo;s durability rung (<code>stream</code> / <code>batched</code> / <code>daily</code>): how often its awake writes sync to the bucket, set per plan by billing or per host by <code>lchat replication</code>. Graceful sleeps and deploys always flush in full regardless. <a href="hibernation.html#replication-classes">Part 06</a>.</dd>
+  <dt id="gloss-activator">the activator</dt>
+  <dd>The component inside the router that wakes sleeping spaces on demand and puts idle ones to sleep. Exists only when <code>LCHAT_HIBERNATE_BUCKET</code> is set. <a href="hibernation.html">Part 06</a>.</dd>
+  <dt id="gloss-hrw">rendezvous hashing</dt>
+  <dd>The rule mesh boxes use to agree which of them owns each space without communicating: every box scores every (box, space) pair the same way, and the highest score wins. Adding or removing a box only moves the spaces whose winner changed. <a href="mesh.html#placement">Part 07</a>.</dd>
+  <dt id="gloss-sidecar">bot sidecar</dt>
+  <dd>The separate process hosting an instance&rsquo;s bot members. It holds the bots&rsquo; encryption keys (which must never live in the server process) and connects outward as an ordinary client. <a href="processes.html#bot-sidecars">Part 03</a>.</dd>
+  <dt id="gloss-canary">canary / pin</dt>
+  <dd>Deploying a new build to one instance to watch it before promoting it everywhere; and the mark that freezes an instance on a version so the hourly auto-updater leaves the experiment alone. <a href="deploys.html#pinning">Part 04</a>.</dd>
+  <dt id="gloss-vapid">web push / VAPID key</dt>
+  <dd>Browser push notifications, signed per instance with a key pair (the <code>.vapid</code> file). Distinct from Apple device push, which goes through the push relay.</dd>
+</dl>
+
+</div>
+</main>
+</div>
+</body>
+</html>

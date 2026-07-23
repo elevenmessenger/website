@@ -1,0 +1,139 @@
+<!doctype html>
+<!-- These go to eleven. -->
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Built for everyone · Eleven</title>
+    <meta name="description" content="Eleven’s commitments to accessibility (WCAG 2.2 AA) and to every platform — a feature isn’t done until everyone in the group can use it, on whatever they own." />
+    <meta name="color-scheme" content="light dark" />
+    
+    <meta name="theme-color" content="#f6f7fb" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#15171c" media="(prefers-color-scheme: dark)" />
+    <link rel="icon" type="image/png" sizes="32x32" href="/assets/icon_32.png" />
+    <link rel="apple-touch-icon" href="/assets/icon_256.png" />
+    <meta property="og:title" content="Eleven" />
+    <meta property="og:description" content="Eleven’s commitments to accessibility (WCAG 2.2 AA) and to every platform — a feature isn’t done until everyone in the group can use it, on whatever they own." />
+    <meta property="og:type" content="website" />
+    <link rel="stylesheet" href="/styles.css" />
+    
+  </head>
+  <body>
+    <canvas class="ambient-canvas" id="ambient-canvas" aria-hidden="true"></canvas>
+    <header class="site-head">
+      <a class="brand" href="/">
+        <img class="brand-mark" src="/assets/icon_128.png" alt="" width="28" height="28" />
+        Eleven
+      </a>
+      <nav class="site-nav" aria-label="Site">
+        <a href="/features/">Features</a>
+        <a href="/security/">Security</a>
+        <a href="/about/">About</a>
+        <a class="nav-signin" href="https://home.elevenmessenger.com">Sign in</a>
+      </nav>
+    </header>
+
+    <main>
+<section class="prose">
+  <h1>Built for everyone</h1>
+  <p class="updated">A group chat only works if the whole group can use it. Both halves of that are commitments here.</p>
+
+  <h2>Whatever you own</h2>
+  <p>
+    Eleven started because a kid’s friends didn’t all own the same brand of
+    device — so this one is a commitment, not a feature: <strong>no member
+    of your group is ever second-class because of what’s in their
+    pocket.</strong>
+  </p>
+  <ul>
+    <li>
+      <strong>Any browser is a first-class app.</strong> Not a cut-down
+      companion — the whole thing, on any laptop, Chromebook, Android
+      phone, or borrowed library computer, with push notifications and all.
+    </li>
+    <li>
+      <strong>Native apps where they make it nicer.</strong> A real Mac
+      app and a real iPhone app, native where it matters — in the feels —
+      and tiny (megabytes, not hundreds of them), so they run happily on
+      older hardware too.
+    </li>
+    <li>
+      <strong>Feature parity is a rule of the house.</strong> Inside this
+      project, a change isn’t "done" when it works on one platform — it
+      ships to web and native together, and the two native apps keep pace
+      with each other. No platform gets the leftovers.
+    </li>
+    <li>
+      <strong>Cheap devices are welcome devices.</strong> Because everything
+      is small and fast, Eleven feels quick on modest hardware and thin
+      connections — which is also <a href="/planet/">why it’s light on the
+      planet</a>. Efficiency and inclusion are the same engineering.
+    </li>
+  </ul>
+
+  <h2>However you use it</h2>
+  <p>
+    The accessibility bar is written down and held on every change:
+    <strong>all web surfaces target
+    <a href="https://www.w3.org/TR/WCAG22/">WCAG 2.2 Level AA</a></strong> —
+    the current W3C recommendation, and the level the world’s accessibility
+    laws converge on — and the native apps target the same bar through
+    Apple’s platform features. In practice:
+  </p>
+  <ul>
+    <li>
+      <strong>Keyboard first.</strong> Everything reachable and operable
+      without a mouse, with a visible focus indicator that panels and menus
+      never trap or lose.
+    </li>
+    <li>
+      <strong>Screen readers are members too.</strong> Controls are
+      labelled, state is announced, and the native apps carry full
+      VoiceOver support.
+    </li>
+    <li>
+      <strong>Your eyes, your settings.</strong> Adjustable text size in
+      the apps, support for the largest Dynamic Type sizes on iOS, and
+      contrast that holds in light and dark across every theme.
+    </li>
+    <li>
+      <strong>Motion is optional.</strong> The ambient effects — including
+      the smoke behind this page — stop under Reduce Motion, and nothing meaningful is ever conveyed by animation or
+      colour alone.
+    </li>
+    <li>
+      <strong>Fingers of all sizes.</strong> Generous touch targets, and no
+      gesture without a plain-tap alternative.
+    </li>
+  </ul>
+  <p>
+    We’re honest about the gap between the bar and any given day’s reality:
+    accessibility issues are bugs. If
+    something gets in your way, tell us and we’ll fix it:
+    <a href="mailto:team@elevenmessenger.com">team@elevenmessenger.com</a>.
+  </p>
+
+  <h2>Why this page exists</h2>
+  <p>
+    Accessibility and multi-platform usually die the same death: "later".
+    Writing them down as commitments — next to
+    <a href="/openness/">the openness charter</a> — is how we make "later"
+    embarrassing.
+  </p>
+</section>
+</main>
+
+    <footer class="site-foot">
+      <p>The group chat of your dreams. No ads, no tracking, no big tech — just your people.</p>
+      <ul class="foot-links">
+        <li><a href="/about/">About Eleven</a></li>
+        <li><a href="/everyone/">Built for everyone</a></li>
+        <li><a href="/privacy/">Privacy</a></li>
+        <li><a href="https://status.elevenmessenger.com">Status</a></li>
+        <li><a href="https://github.com/elevenmessenger/releases">Downloads</a></li>
+        <li><a href="mailto:team@elevenmessenger.com">team@elevenmessenger.com</a></li>
+      </ul>
+    </footer>
+    <script type="module" src="/ambient.js"></script>
+  </body>
+</html>

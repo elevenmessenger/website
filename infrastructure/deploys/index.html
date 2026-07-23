@@ -1,0 +1,172 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Installing and updating the software — Running the fleet</title>
+<link rel="stylesheet" href="guide.css" />
+<script src="guide.js" defer></script>
+</head>
+<body data-page="deploys.html">
+<div class="frame">
+<nav class="side"></nav>
+<main class="content">
+<div class="wrap">
+
+<header class="top">
+  <p class="eyebrow"><span class="robot">&#129302;</span> Running the fleet &middot; Part 04 of 10</p>
+  <h1>Installing and updating the software</h1>
+  <p class="thesis">Every instance on a box can run a <strong>different version</strong> of the software at the same time. This page explains the machinery that makes that true — the version store and the per-instance symbolic link — and then the three ways software changes: <strong>a manual staged deploy, an automatic hourly update, and rollback.</strong></p>
+</header>
+
+<div class="sysmap" data-highlight="updater"></div>
+<p class="sysmap-caption">You are here: the auto-updater node — though this page equally concerns the version store under <code>/opt/lchat/</code> and the per-instance links that decide which build every instance runs.</p>
+
+<h2 id="mental-model">The mental model: a store of builds and a pointer per instance</h2>
+<p>Two filesystem facts, introduced in <a href="processes.html#opt">part 03</a>, carry this entire page:</p>
+<ul>
+  <li><strong>The version store.</strong> Every build of the software that has ever been staged on the box lives at <code>/opt/lchat/versions/&lt;ver&gt;/lchat</code>, where <code>&lt;ver&gt;</code> is the build&rsquo;s identifier — a short git commit hash such as <code>1b4bd808</code>, stamped into the binary when it was compiled. Builds sit side by side and never overwrite each other.</li>
+  <li><strong>The per-instance pointer.</strong> Each instance&rsquo;s systemd unit runs <code>/opt/lchat/live/&lt;host&gt;</code>, which is a symbolic link into the version store. <em>Which build an instance runs is exactly where its link points, nothing more.</em></li>
+</ul>
+<p>So &ldquo;deploy version X to instance Y&rdquo; decomposes into: repoint <code>live/Y</code> at <code>versions/X/lchat</code>, restart Y&rsquo;s process, and verify Y now reports build X. That is genuinely all a deploy is, and every command below is a wrapper around those three steps with safety checks. It also makes the two most valuable properties fall out for free:</p>
+<ul>
+  <li><strong>Canarying:</strong> point <em>one</em> instance at a new build while the rest stay put, watch it, then promote the rest.</li>
+  <li><strong>Rollback:</strong> the previous build is still sitting in the store, and the registry remembers which one it was — stepping back is repointing the link again.</li>
+</ul>
+<figure class="diagram">
+<svg viewBox="0 0 720 210" role="img" aria-label="Diagram: three live links point into a store of versioned builds; one instance is canaried on a newer build.">
+  <rect x="20" y="20" width="290" height="170" rx="10" fill="none" stroke="var(--rule)" stroke-dasharray="4 4"></rect>
+  <text x="34" y="42" font-size="10" font-weight="700" letter-spacing="0.08em" fill="var(--muted)">/opt/lchat/live/</text>
+  <rect x="34" y="56" width="240" height="30" rx="6" fill="var(--diagram-box)" stroke="var(--rule)"></rect>
+  <text x="44" y="75" font-size="11" font-family="var(--mono)">chat-a.example.com</text>
+  <rect x="34" y="96" width="240" height="30" rx="6" fill="var(--diagram-box)" stroke="var(--rule)"></rect>
+  <text x="44" y="115" font-size="11" font-family="var(--mono)">chat-b.example.com</text>
+  <rect x="34" y="136" width="240" height="30" rx="6" fill="var(--accent-soft)" stroke="var(--accent)"></rect>
+  <text x="44" y="155" font-size="11" font-family="var(--mono)">test.example.com (canary)</text>
+  <rect x="430" y="20" width="270" height="170" rx="10" fill="none" stroke="var(--rule)" stroke-dasharray="4 4"></rect>
+  <text x="444" y="42" font-size="10" font-weight="700" letter-spacing="0.08em" fill="var(--muted)">/opt/lchat/versions/</text>
+  <rect x="444" y="56" width="240" height="44" rx="6" fill="var(--diagram-box)" stroke="var(--rule)"></rect>
+  <text x="454" y="75" font-size="11" font-family="var(--mono)">9c21e77e/lchat</text>
+  <text x="454" y="91" font-size="9.5" fill="var(--muted)">the stable build</text>
+  <rect x="444" y="116" width="240" height="44" rx="6" fill="var(--accent-soft)" stroke="var(--accent)"></rect>
+  <text x="454" y="135" font-size="11" font-family="var(--mono)">4f0a2d19/lchat</text>
+  <text x="454" y="151" font-size="9.5" fill="var(--muted)">the new build being canaried</text>
+  <path d="M 274 71 C 360 71, 360 78, 444 78" fill="none" stroke="var(--muted)" stroke-width="1.2"></path>
+  <path d="M 274 111 C 360 111, 360 84, 444 84" fill="none" stroke="var(--muted)" stroke-width="1.2"></path>
+  <path d="M 274 151 C 360 151, 360 138, 444 138" fill="none" stroke="var(--accent)" stroke-width="1.6"></path>
+</svg>
+<figcaption>Each instance&rsquo;s link chooses its build independently. Here two instances run the stable build while one canaries a newer one.</figcaption>
+</figure>
+
+<h2 id="bootstrap">Setting up a brand-new box: <code>lchat bootstrap</code></h2>
+<p>Because the software is one static binary, provisioning a fresh Linux server needs no compiler, no language runtime, and no packages. The one-time sequence is:</p>
+<ol class="procedure">
+  <li><p class="step-title">Copy the binaries to the box (or use the installer).</p>
+  <p>Either copy a built <code>lchat</code> binary to <code>/opt/lchat/lchat</code> yourself, or run <code>deploy/install.sh</code>, which downloads the latest stable release, verifies its checksum, and performs the next step for you.</p></li>
+  <li><p class="step-title">Run <code>lchat bootstrap</code>, as root, once.</p>
+  <p>This writes all the systemd unit files described in <a href="processes.html#census">part 03</a>, creates the <code>lchat</code> system user, creates <code>/data</code>, <code>/run/lchat</code>, and the certificate cache directory, mints the root-only control token at <code>/etc/lchat/control.token</code>, then enables and starts the router and the hourly update timer. It is idempotent: re-running it refreshes the unit files without touching data.</p></li>
+  <li><p class="step-title">Open ports 80 and 443 (and 22 for yourself) in the firewall.</p>
+  <p>Nothing else needs a public port — see <a href="operations.html#hardening">part 08</a>.</p></li>
+</ol>
+
+<h2 id="manual-deploy">A manual deploy, end to end: build, stage, canary, promote</h2>
+<p>This is the full ceremony for shipping a build you compiled yourself. It is the procedure behind every &ldquo;deploy the new version&rdquo; task, and each step exists for a reason given alongside it.</p>
+<ol class="procedure">
+  <li><p class="step-title">Build the Linux binary on your own machine, stamped with its version.</p>
+  <figure class="cmd">
+  <figcaption>Run on your own machine, in the repository</figcaption>
+  <pre><code>./deploy/build-linux.sh
+<span class="out"># produces lchat-linux-amd64, with the current git commit hash compiled in</span></code></pre>
+  </figure>
+  <p>The build script passes the git commit hash into the binary itself, and the running server reports it at <code>GET /api/version</code> as the <code>build</code> field. This self-identification is what makes health-checked deploys possible: the machinery can ask a process which build it <em>actually is</em>, rather than trusting that a restart took.</p></li>
+  <li><p class="step-title">Copy the binary to the box and stage it into the version store.</p>
+  <figure class="cmd">
+  <figcaption>Run on your own machine</figcaption>
+  <pre><code>scp lchat-linux-amd64 box-1:/opt/lchat/incoming
+ssh box-1 sudo /opt/lchat/lchat stage --file /opt/lchat/incoming
+<span class="out">staged 4f0a2d19</span></code></pre>
+  </figure>
+  <p><code>stage</code> asks the binary for its own build identifier and copies it to <code>/opt/lchat/versions/4f0a2d19/lchat</code>. Nothing is running it yet; staging is inert and always safe.</p></li>
+  <li><p class="step-title">Deploy it to one canary instance first.</p>
+  <figure class="cmd">
+  <figcaption>Run on the box (or via ssh)</figcaption>
+  <pre><code>lchat deploy test.example.com --version 4f0a2d19</code></pre>
+  </figure>
+  <p>This repoints <code>live/test.example.com</code>, restarts the unit, and then <strong>polls <code>/api/version</code> until the instance reports build <code>4f0a2d19</code></strong> — not merely &ldquo;answers 200&rdquo;. If the report never matches (the new build crashes on start, say), the command automatically repoints the link back to the previous version, restarts again, and exits with an error. A failed deploy therefore leaves the instance running the old build, not down.</p></li>
+  <li><p class="step-title">Verify the canary by using it, then promote the whole box.</p>
+  <figure class="cmd">
+  <figcaption>Run on the box</figcaption>
+  <pre><code>lchat deploy --all --version 4f0a2d19</code></pre>
+  </figure>
+  <p><code>--all</code> rolls instance by instance, health-checking each, and <strong>stops at the first failure</strong> (instances already promoted stay promoted). It also <strong>skips pinned instances</strong> — a pin marks somebody&rsquo;s deliberate canary, and a fleet-wide promote must not stomp it; <code>--include-pinned</code> overrides that deliberately, and naming a host explicitly always deploys it. Two more useful forms: <code>lchat deploy &lt;host&gt;</code> with no <code>--version</code> simply restarts the instance on its current build, and <code>--pin</code> combined with <code>--version</code> deploys <em>and</em> pins in one step (the standard way to start a canary that the auto-updater must leave alone).</p></li>
+  <li><p class="step-title">If anything looks wrong later, step back.</p>
+  <figure class="cmd">
+  <figcaption>Run on the box</figcaption>
+  <pre><code>lchat rollback test.example.com
+<span class="out">rolled back test.example.com: 4f0a2d19 -&gt; 9c21e77e</span></code></pre>
+  </figure>
+  <p id="rollback"><code>rollback</code> repoints the link at the registry&rsquo;s recorded previous version, restarts, health-checks, and swaps the &ldquo;current&rdquo; and &ldquo;previous&rdquo; records — so a second rollback returns you forward again. <code>rollback --all</code> steps every instance back, skipping any that have no recorded previous version.</p></li>
+</ol>
+<div class="plain">
+  <span class="label">In plain words</span>
+  <p>You never overwrite the program an instance is running. You put the new program on the shelf next to the old one, point one test instance at it, let the machinery confirm the test instance really is running the new program, and only then point the others at it too. The old program stays on the shelf, so going back is always one command.</p>
+</div>
+<p>Three background details that protect you during all of this: a <strong>deploy lock</strong> (<code>/opt/lchat/.deploy.lock</code>) makes concurrent deploys, rollbacks, and updater passes take strict turns — the loser fails immediately with &ldquo;another deploy/rollback/update is running&rdquo; rather than interleaving. The <strong>router&rsquo;s dial retry</strong> (<a href="router.html#restart-tolerance">part 02</a>) bridges each instance&rsquo;s restart gap so members see at most a moment of added latency. And each deploy <strong>restarts the instance&rsquo;s bot sidecar</strong> right after the instance passes its health check, because the sidecar execs the same versioned link and must track it.</p>
+
+<h2 id="auto-updates">The automatic path: release channels and the hourly updater</h2>
+<p>Most of the time nobody drives deploys by hand: boxes keep themselves current. Three pieces cooperate:</p>
+<h3 id="signing">The signed release feed</h3>
+<p>Published releases live in a public feed: a manifest file listing, for each <strong>channel</strong>, the newest version, its download URL, and its checksum. There are exactly three channels — <code>stable</code> (the default), <code>beta</code>, and <code>edge</code> (tracks the main branch). The manifest is signed with an Ed25519 key whose public half is compiled into every binary, and every box remembers the newest manifest timestamp it has ever accepted (<code>/opt/lchat/manifest-stamp</code>) and refuses anything older. Together those two checks mean a compromised or stale download server cannot push the fleet backwards or substitute binaries: only the holder of the signing key can move a channel. There is also an optional mirror of the feed in object storage (<code>LCHAT_RELEASE_MIRROR_URL</code>) that boxes fall back to when the primary fails or serves something stale — the mirror adds availability, never trust, because the signature checks are identical on both paths.</p>
+<h3 id="update-pass">What one updater pass does</h3>
+<p>The timer <code>lchat-update.timer</code> fires <code>lchat update run</code> hourly (with a random spread of up to ten minutes, so a fleet of boxes does not hit the feed simultaneously). One pass, in order: fetch and verify the manifest; ask each instance for its <em>own admin&rsquo;s preferences</em> (channel choice, auto-update on or off, download-only) over its socket; then, per instance that wants updating: download, checksum, stage, and apply through <em>exactly the same</em> deploy-with-health-check-and-auto-rollback dance as a manual deploy. A build that fails its health check on one instance is <strong>poisoned for the rest of the pass</strong> — the updater will not try it on instances that still pass. One unreachable instance logs and is skipped; it never strands the rest of the fleet. After the pass, builds in the version store that nothing references any more (no instance&rsquo;s current or previous version, no channel head, no pin) are garbage-collected, so hourly updates on the edge channel stay disk-bounded.</p>
+<h3 id="pinning">Pinning: how a canary survives the hourly pass</h3>
+<p>A <strong>pin</strong> freezes one instance on one exact version. The updater skips a pinned instance entirely, and its pinned build survives garbage collection. Pins are how a deliberately deployed canary is protected from being &ldquo;corrected&rdquo; back to the channel head an hour later. The pin is stored as instance state (the instance&rsquo;s admin can also see and clear it in the admin panel), and the fleet commands read and write it:</p>
+<figure class="cmd">
+<figcaption>Run on the box — the pinning vocabulary</figcaption>
+<pre><code>lchat deploy test.example.com --version 4f0a2d19 --pin   # deploy a canary and freeze it, one command
+lchat update pin test.example.com                        # freeze on whatever it runs right now
+lchat update unpin test.example.com                      # resume following its channel (next hourly pass)
+lchat update status                                      # the fleet update table:
+<span class="out">HOST                 CHANNEL  AUTO     CURRENT   AVAILABLE
+chat-a.example.com   stable   dl+upd   9c21e77e  9c21e77e
+test.example.com     stable   pinned   4f0a2d19  9c21e77e</span></code></pre>
+</figure>
+<div class="warn">
+  <span class="label">Before any fleet-wide action, look for pins</span>
+  <p>Every <code>pinned</code> row in <code>lchat update status</code> is somebody&rsquo;s live experiment. <code>deploy --all --version</code> skips them by itself, but channel changes and unpin sweeps do not — check the table first, and leave pinned rows alone unless you know whose they are.</p>
+</div>
+<p><code>lchat update run --dry-run</code> prints what a pass <em>would</em> do without doing it — useful before enabling anything new. Hibernating instances get updates too, by a quieter route: the updater reads their preferences straight from their on-disk database (read-only) and simply repoints their <code>live</code> link, so they come up on the new build at their next wake, with no health check (a bad build on a hibernator is recovered with <code>rollback</code>).</p>
+
+<h2 id="sibling-deploys">Deploying the sibling services and the control binary</h2>
+<p>The home server and push relay are <em>not</em> versioned instances — they show <code>-</code> in the version column. <span class="badge live">running today</span> On a hardened box (root SSH bootstrap-only) they deploy through the same version store as everything else, via the allowlisted <code>install</code> verb:</p>
+<pre>scp ./home box-1:/opt/lchat/incoming/home-&lt;sha&gt;
+ssh box-1 sudo -n /opt/lchat/lchat stage --file /opt/lchat/incoming/home-&lt;sha&gt;   # prints &lt;ver&gt;
+ssh box-1 sudo -n /opt/lchat/lchat install home --version &lt;ver&gt;
+ssh box-1 sudo -n /usr/local/sbin/lchat-svc restart lchat-home</pre>
+<p><code>install</code> knows the sibling set (<code>home</code>, <code>push</code>, <code>connect</code>), backs the outgoing binary up beside itself as <code>&lt;name&gt;.prev-&lt;date&gt;</code> (the one-copy rollback), and deliberately does <em>not</em> restart the unit — the restart is the operator's visible act, so an install can be staged ahead of a maintenance window. The version store doesn't care what a binary <em>is</em>: <code>stage --file</code> records any build under its own version id, so sibling builds sit beside messenger builds. Extending the sibling set is a reviewed PR, never a box edit.</p>
+<p><span class="badge live">running today</span> Routine sibling deploys don't need even that: every publish also uploads <code>lchat-{connect,push,home}-linux-&lt;arch&gt;</code> with their sha256s pinned <em>inside the signed manifest entry</em>, and the hourly pass <strong>converges the sibling binaries automatically</strong> right after the control binary's own self-update — sha-comparing each loose <code>/opt/lchat/&lt;name&gt;</code> against the channel head, swapping any that drifted (a <code>.prev</code> kept beside it), bouncing the unit only if it was running, and rolling back + quarantining a build whose unit doesn't stay up. Same signature, same bake window, same channel (<code>LCHAT_CONTROL_CHANNEL</code>). A box that doesn't run a service has no file at its path and is skipped — nothing installs uninvited. The manual <code>install</code> verb stays as the ad-hoc/canary path.</p>
+<p><span class="badge live">running today</span> The control/router binary <code>/opt/lchat/lchat</code> <strong>self-updates on the same hourly pass</strong>: after the instances, the updater installs its channel's head over its own path — same signed feed, same sha check, same bake window — keeping the outgoing build beside it as <code>lchat.prev-&lt;build&gt;</code> (the one-rename rollback). The channel is <code>LCHAT_CONTROL_CHANNEL</code> in <code>/data/update.env</code> (<code>stable</code> by default — the trust plane takes new builds last; <code>off</code> disables self-update). After a swap the pass restarts <code>lchat-control</code> and <code>lchat-cloud</code> (backend sockets, invisible to members) but <em>never</em> the router — its front door must not blip on a timer's schedule, so <code>lchat-router</code> keeps running the old build until an operator restarts it, and the pass says so in its log. This is also how root-less operator boxes stay current: the manual root <code>cp</code> this replaced stopped being possible when root SSH went bootstrap-only.</p>
+
+<h2 id="verifying">Verifying what is deployed where</h2>
+<figure class="cmd">
+<figcaption>Run on the box — the questions and their answers</figcaption>
+<pre><code># Which build does each instance run? (VERSION column)
+lchat instances
+
+# Which build is a specific instance really running, asked of the process itself?
+curl -s https://chat-a.example.com/api/version
+<span class="out">{"version":"a41c9f2","build":"9c21e77e"}</span>
+
+# Which build would the unit start next time? (where the link points)
+readlink /opt/lchat/live/chat-a.example.com
+
+# What builds are on the shelf?
+ls /opt/lchat/versions/</code></pre>
+</figure>
+<p>When the registry, the link, and the process disagree, believe the process (<code>/api/version</code>) about the present and the link about the future — and expect the next restart to reconcile them.</p>
+
+</div>
+</main>
+</div>
+</body>
+</html>

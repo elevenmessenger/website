@@ -1,0 +1,144 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>The mesh — Running the fleet</title>
+<link rel="stylesheet" href="guide.css" />
+<script src="guide.js" defer></script>
+</head>
+<body data-page="mesh.html">
+<div class="frame">
+<nav class="side"></nav>
+<main class="content">
+<div class="wrap">
+
+<header class="top">
+  <p class="eyebrow"><span class="robot">&#129302;</span> Running the fleet &middot; Part 07 of 10</p>
+  <h1>The mesh: running more than one box</h1>
+  <p class="thesis">The mesh lets several boxes serve one fleet of hibernating spaces <strong>with no coordinator, no shared database, and no new network protocol between them</strong>: boxes announce themselves with heartbeat objects in the shared S3 bucket, a hashing rule decides which box should own which space, and the per-space lease guarantees correctness even when boxes disagree.</p>
+</header>
+
+<div class="sysmap" data-highlight="peer bucket control"></div>
+<p class="sysmap-caption">You are here: the peer boxes, and the bucket they coordinate through. Note that peers never need to discover each other directly — everything flows through the bucket they already share for hibernation.</p>
+
+<div class="plain">
+  <span class="label">Read this first: the mesh is live</span>
+  <p>Production runs two boxes today, both with <code>LCHAT_MESH_SELF</code> set, splitting a shared pool of hibernating spaces under a scoped set of domains (<code>LCHAT_MESH_DOMAINS</code>). Registry rows now replicate automatically between them (see <a href="#mesh-replication">route replication</a> below) — the manual step this section used to describe is gone. The <a href="#mesh-limits">honest limits</a> section at the end lists what genuinely remains unbuilt; everything else on this page describes code as it runs today.</p>
+</div>
+
+<h2 id="mesh-idea">The idea: ownership as a rule, correctness as a lock</h2>
+<p>Hibernation (<a href="hibernation.html">part 06</a>) already moved every space&rsquo;s durable state into the bucket, and made the per-space <a href="hibernation.html#the-lease">lease</a> the single arbiter of who may write it. That does most of the multi-box work by itself: any box <em>could</em> wake any space, and the lease already prevents two from doing so at once. What remains is efficiency and manners — spaces should not ping-pong between boxes, and a request that lands on the &ldquo;wrong&rdquo; box should still be answered. The mesh adds exactly three small mechanisms on top of the bucket:</p>
+<ol>
+  <li><strong>Membership:</strong> each box periodically writes a tiny heartbeat object; listing them yields the set of live boxes.</li>
+  <li><strong>Placement:</strong> a deterministic hashing rule (&ldquo;rendezvous hashing&rdquo;) maps each hostname to one preferred owner among the live boxes.</li>
+  <li><strong>Forwarding:</strong> a box that receives a request for a space it does not own transparently proxies the request to the owner.</li>
+</ol>
+<div class="plain">
+  <span class="label">In plain words</span>
+  <p>The boxes never talk to each other to decide who does what. Each box signs a guest book in the shared storage room every fifteen seconds, everyone applies the same arithmetic to the guest book to work out who should host which space, and the storage room&rsquo;s key hooks (the leases) make it impossible for two boxes to act on a disagreement. A box that stops signing the book is presumed gone within forty-five seconds, and its spaces re-home themselves automatically.</p>
+</div>
+
+<h2 id="mesh-config">Enabling the mesh on a box</h2>
+<p>Three environment variables in <code>/data/router.env</code>, on top of an already-configured hibernation bucket:</p>
+<figure class="cmd">
+<figcaption>Contents of /data/router.env (then: systemctl restart lchat-router)</figcaption>
+<pre><code>LCHAT_HIBERNATE_BUCKET=my-hibernation-bucket   # prerequisite: the mesh rides on the hibernation bucket
+LCHAT_MESH_SELF=https://box-1.example.net      # this box&rsquo;s identity: a base URL its PEERS can reach it at
+LCHAT_MESH_DOMAINS=11ch.example.com            # comma-separated; ONLY hosts under these domains participate
+LCHAT_MESH_TOKEN=&lt;a shared secret, identical on every box&gt;  # authenticates route replication</code></pre>
+</figure>
+<dl>
+  <dt><code>LCHAT_MESH_SELF</code> — the master switch and the box&rsquo;s identity</dt>
+  <dd>A URL with a scheme (<code>https</code> or <code>http</code>) and a host, no path. Its <em>presence</em> turns the mesh on; absent means a single box and zero mesh code. It must be reachable by the <em>other boxes</em> (it is what they proxy to), which may be a private network address (<code>http://10.0.0.5</code>) or a public one.</dd>
+  <dt><code>LCHAT_MESH_DOMAINS</code> — the scope, and it is required</dt>
+  <dd>The router refuses to start with <code>LCHAT_MESH_SELF</code> set but no domains. Only hostnames equal to or directly under a listed domain participate in mesh placement; every other host is always served locally, exactly as without a mesh. Two reasons for the scoping, both practical: a routing entry for a host only exists on the boxes it has been replicated to (see <a href="#mesh-replication">route replication</a>), so placement must be confined to hosts every member can serve; and every mesh member must be able to obtain a TLS certificate for any host that might land on it, which per-host issuance cannot promise (it ties a certificate to whichever box the public DNS points at) but a shared <a href="router.html#dns01">wildcard certificate</a> can. In practice: <strong>mesh domains should be wildcard-certificate domains.</strong></dd>
+  <dt><code>LCHAT_MESH_TOKEN</code> — the shared secret, and it is also required</dt>
+  <dd>The router refuses to start with <code>LCHAT_MESH_SELF</code> set but no token. A bearer secret, identical across every mesh member, that authenticates the route-replication endpoint (<a href="#mesh-replication">below</a>) — without it, any box that could reach another's mesh port could hand it arbitrary routing entries. Generate it once and copy it to every box&rsquo;s <code>/data/router.env</code>; it is not derived from anything else and is not printed anywhere at runtime.</dd>
+</dl>
+
+<h2 id="membership">Membership: heartbeats in the bucket</h2>
+<p>Every fifteen seconds, each mesh box writes one object under <code>&lt;prefix&gt;/mesh/members/</code> in the hibernation bucket and lists the others. The scheme has three properties worth appreciating:</p>
+<ul>
+  <li><strong>The object&rsquo;s key <em>is</em> the record</strong> — it is an encoding of the box&rsquo;s own <code>LCHAT_MESH_SELF</code> URL — so a single cheap LIST operation yields the entire membership, with no per-member reads.</li>
+  <li><strong>Liveness is judged by the bucket&rsquo;s clock</strong>, not the boxes&rsquo; clocks: freshness is the object&rsquo;s last-modified time as recorded by S3 itself, so a box with a wrong clock cannot poison anyone&rsquo;s view. A heartbeat older than forty-five seconds (three missed beats) marks its box dead.</li>
+  <li><strong>Failures are soft.</strong> A box that fails to write its beat is simply taken over by its peers (the lease arbitrates any overlap); a box that fails to <em>read</em> keeps its last known view and at worst misroutes — which, again, the lease absorbs. Neither failure is fatal, and both are logged.</li>
+</ul>
+<figure class="cmd">
+<figcaption>Run anywhere with bucket credentials — who is in the mesh right now?</figcaption>
+<pre><code>aws s3 ls s3://my-hibernation-bucket/prod/mesh/members/
+<span class="out">2026-07-13 14:02:11         38 aHR0cHM6Ly9ib3gtMS5leGFtcGxlLm5ldA
+2026-07-13 14:02:09         38 aHR0cHM6Ly9ib3gtMi5leGFtcGxlLm5ldA</span>
+# the timestamps are the liveness signal; the key decodes to the peer URL:
+echo aHR0cHM6Ly9ib3gtMS5leGFtcGxlLm5ldA | base64 -d
+<span class="out">https://box-1.example.net</span></code></pre>
+</figure>
+
+<h2 id="placement">Placement: rendezvous hashing, and why the lease still decides</h2>
+<p>For each in-scope hostname, every box independently computes a score for every live member (a hash of the pair &ldquo;this box, this host&rdquo;) and the highest score wins ownership. This is <strong>rendezvous hashing</strong>, and its virtue is minimal disruption: because each (box, host) pair&rsquo;s score never changes, adding or removing one box only reassigns the hosts whose winning box appeared or vanished — roughly <em>1/N</em> of them — while everything else stays put. There is no table to distribute, no leader to elect: ownership is arithmetic on the guest book.</p>
+<p>But membership views can momentarily disagree (one box has seen a fresh heartbeat the other has not). The design&rsquo;s answer is that <strong>hashing is only a hint, and the lease is the truth</strong>: a box that wrongly believes it owns a space simply loses the lease race at wake time, loudly, and the requester retries onto the right answer. Transient disagreement structurally cannot corrupt anything — it can only cost a retry.</p>
+<p>Two refinements keep behaviour calm: a space that is <em>currently awake</em> on some box stays there until its natural sleep, even if the hash now prefers another box — its state is already in the bucket, so &ldquo;migration&rdquo; is nothing more than waking on the new owner next time. And <a href="hibernation.html#due-time-wakes">scheduled wakes</a> fire only on the box that owns the host, so a due reminder wakes one box, not all of them.</p>
+
+<h2 id="one-hop">Forwarding: wrong-box requests proxy to the owner, once</h2>
+<p>When a request arrives at a box that is not the computed owner, the box reverse-proxies the entire request to the owner&rsquo;s <code>LCHAT_MESH_SELF</code> URL — preserving the original hostname, verifying the owner&rsquo;s TLS certificate against <em>the instance&rsquo;s hostname</em> (this is why mesh domains want the shared wildcard certificate), and pinning the underlying connection to the peer&rsquo;s address. There is no certificate-verification bypass anywhere. A forwarded request is marked with an internal header (<code>X-Lchat-Mesh-Forwarded</code>, stripped from all outside traffic), and a marked request is <strong>never forwarded again</strong>: if two boxes disagree about ownership, the second box serves the request locally — a wrong-box wake the lease then resolves — instead of the pair bouncing the request forever.</p>
+
+<h2 id="mesh-replication">Route replication: every box learns about every host</h2>
+<p>The router looks a request&rsquo;s hostname up in its <strong>own local registry</strong> before any mesh logic runs at all, and answers <code>404</code> immediately on a miss. So placement (hashing, forwarding) is only half the story: a box can only ever serve — or even correctly forward — a host it has a registry row for. Two mechanisms keep every mesh member&rsquo;s registry in sync, both authenticated with <code>LCHAT_MESH_TOKEN</code>:</p>
+<ul>
+  <li><strong>Automatic fan-out on creation.</strong> The moment a new in-scope hibernating host is registered anywhere, that box replicates the row to every <em>currently live</em> mesh peer (found the same way placement does — the membership heartbeats). Only a narrow, purpose-built payload crosses the wire — host, kind, version, hibernate flag, and a handful of routing-relevant fields — never the receiving box&rsquo;s own socket path or database path, which each box always derives locally. A peer that is down at that moment simply misses the row; fan-out is best-effort, logged, and never blocks the create.</li>
+  <li><strong><code>lchat mesh-seed &lt;peer-url&gt;</code> — the one-time catch-up.</strong> Run on an existing box and pointed at a newly joined one, this bulk-replicates every in-scope hibernating route the existing box already knows about, in one pass. This is the command that makes joining a box a single step instead of hand-registering every host (see <a href="#add-box">adding a box</a>, below).</li>
+</ul>
+<div class="why">
+  <span class="label">Why replicate rows instead of just answering for any host</span>
+  <p>The alternative — a box that does not recognise a hostname asking its peers before giving up — would need a new box-to-box RPC, adding a network dependency the S3-only design deliberately avoids everywhere else. Replicating the (small, non-secret) routing metadata ahead of time keeps every box able to answer a hit or a genuine 404 from its own disk, no peer round-trip required.</p>
+</div>
+<div class="warn">
+  <span class="label">A replicated route still needs materializing before its first wake</span>
+  <p>A route reaching a box through replication (or <code>mesh-seed</code>) is a registry row only — unlike <code>add-instance</code> on the box that originates it, replication never stages a binary or creates a <code>live</code> symlink for that host. The router process is sandboxed (<code>ProtectSystem=strict</code>) and cannot write to <code>/opt/lchat</code> itself, so its wake path materializes a first-time route by asking the unsandboxed <a href="spaces.html#controld">control daemon</a> to do it instead. This needs the router unit&rsquo;s <code>LoadCredential=control-token:/etc/lchat/control.token</code> drop-in (<code>deploy/systemd/lchat-router-control-token.conf</code>) — without it, the router logs a warning at startup and a replicated route&rsquo;s <em>first</em> wake on that box fails outright (a live production incident the first time this was tried; see <code>docs/planet-scale.md</code>&rsquo;s decision log for the full account). Every mesh member needs this drop-in installed.</p>
+</div>
+
+<h2 id="box-lifecycle">Adding, draining, and losing a box</h2>
+<h3 id="add-box">Adding a box to the mesh</h3>
+<ol class="procedure">
+  <li><p class="step-title">Provision the box normally.</p>
+  <p>Install the binary and run <code>lchat bootstrap</code>, exactly as in <a href="deploys.html#bootstrap">part 04</a>. Give it the <em>same</em> hibernation bucket, prefix, and credentials as its peers in <code>/data/router.env</code> — the shared bucket is the entire coordination fabric.</p></li>
+  <li><p class="step-title">Give it the shared wildcard certificate capability.</p>
+  <p>Configure <code>LCHAT_WILDCARD_DOMAINS</code> (and the DNS API token) for the mesh domains, so this box can present valid certificates for any space that lands on it.</p></li>
+  <li><p class="step-title">Install the control-token drop-in.</p>
+  <p>Copy <code>deploy/systemd/lchat-router-control-token.conf</code> in alongside <code>lchat-router.service</code> so the router can materialize a replicated route&rsquo;s first wake through <a href="spaces.html#controld">controld</a> — see the warning above. Skipping this is the single most common way a fresh mesh box looks fine (heartbeats, membership) until the first real request lands on it.</p></li>
+  <li><p class="step-title">Set its mesh identity and restart the router.</p>
+  <figure class="cmd"><figcaption>Run on the new box — /data/router.env additions, then restart</figcaption>
+  <pre><code>LCHAT_MESH_SELF=https://box-2.example.net
+LCHAT_MESH_DOMAINS=11ch.example.com
+LCHAT_MESH_TOKEN=&lt;the same shared secret as every other box&gt;
+# then:  systemctl restart lchat-router</code></pre></figure>
+  <p>Within one heartbeat interval the peers see the new member.</p></li>
+  <li><p class="step-title">Seed its registry from an existing box.</p>
+  <figure class="cmd"><figcaption>Run on an EXISTING mesh box, pointed at the new one</figcaption>
+  <pre><code>lchat mesh-seed https://box-2.example.net</code></pre></figure>
+  <p>Bulk-replicates every in-scope hibernating route in one pass, so the new box can immediately answer for (or correctly proxy) any of them. After this, roughly <em>1/N</em> of the in-scope spaces re-home to the new box at their next sleep/wake boundary — nothing needs announcing beyond this one command; the guest book and the registry rows do the rest.</p></li>
+</ol>
+<h3 id="drain-box">Draining a box (deploys, maintenance, scale-down)</h3>
+<p>Stopping the router <em>is</em> the drain: its shutdown sequence <strong>deletes this box&rsquo;s heartbeat first</strong> — so peers take ownership immediately — and then checkpoints every awake space to the bucket and releases its leases as usual. Deploying a new router build, retiring a box, and reacting to failure are deliberately the same code path.</p>
+<figure class="cmd">
+<figcaption>Run on the box being drained</figcaption>
+<pre><code>systemctl stop lchat-router   # heartbeat deleted, spaces checkpointed, leases released</code></pre>
+</figure>
+<p>The recovery numbers, verified by live tests in both directions: after a <em>graceful</em> drain, the survivor is serving the drained box&rsquo;s spaces about <strong>two seconds</strong> later; after a <em>hard kill</em> (no drain, heartbeat left to rot), within about <strong>the lease lifetime</strong> — thirty seconds when those tests ran, <strong>fifteen minutes</strong> since #836 stretched the lease to tame its S3 request bill — with data intact in both cases (up to the space&rsquo;s <a href="hibernation.html#replication-classes">replication class</a>&rsquo;s window), because writes had been syncing to the bucket all along.</p>
+
+<h2 id="mesh-limits">The honest limits: what stands between here and a true multi-box fleet</h2>
+<p>Two gaps remain. Neither is speculative — each corresponds to a concrete piece of code that is reserved or not yet written. (Two things this section used to list — registry replication and fleet-wide status aggregation — have since shipped and are covered above and in <a href="operations.html#observability">part 08</a>.)</p>
+<ul>
+  <li><span class="status partial">partially built</span> <strong>Route mutations after creation do not replicate.</strong> The initial fan-out (<a href="#mesh-replication">above</a>) and <code>mesh-seed</code> cover creation and joining, but a later rename, removal, or hibernation-flag flip on one box is not currently propagated to its peers — those must still be repeated by hand on every mesh member. Fine for a pool of auto-provisioned, rarely-renamed spaces; worth closing before mesh placement carries more than that.</li>
+  <li><span class="status partial">partially built</span> <strong>The certificate cache is per box.</strong> The wildcard certificate makes mesh domains workable (each box independently obtains its own copy), but per-host certificates for domains outside the wildcard cannot follow a space between boxes; the S3-backed shared cache that would fix this is reserved (<code>LCHAT_CERT_CACHE=s3</code>) and deliberately refuses to start. See <a href="router.html#tls">part 02</a>.</li>
+</ul>
+<div class="roadmap">
+  <span class="label">Designed, not built: what the mesh grows into</span>
+  <p>The written design (<code>docs/planet-scale.md</code>) carries the mesh further than any current code: per-space <em>geographic</em> placement using the registry&rsquo;s <code>home_region</code> field (relocating a space between regions while it sleeps, by copying its bucket prefix and flipping the field); an autoscaling group of boxes behind a network load balancer, sized on warm-set memory; and a co-operative &ldquo;provider&rdquo; seam in which spaces could be delegated to operators other than the product&rsquo;s own. Each of these has a schema field or an interface already cut for it, and none has operable behaviour today.</p>
+</div>
+
+</div>
+</main>
+</div>
+</body>
+</html>

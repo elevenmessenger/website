@@ -1,0 +1,171 @@
+<!doctype html>
+<!-- These go to eleven. -->
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Privacy · Eleven</title>
+    <meta name="description" content="How Eleven handles your data — end-to-end encrypted, no analytics, no tracking." />
+    <meta name="color-scheme" content="light dark" />
+    
+    <meta name="theme-color" content="#f6f7fb" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#15171c" media="(prefers-color-scheme: dark)" />
+    <link rel="icon" type="image/png" sizes="32x32" href="/assets/icon_32.png" />
+    <link rel="apple-touch-icon" href="/assets/icon_256.png" />
+    <meta property="og:title" content="Eleven" />
+    <meta property="og:description" content="How Eleven handles your data — end-to-end encrypted, no analytics, no tracking." />
+    <meta property="og:type" content="website" />
+    <link rel="stylesheet" href="/styles.css" />
+    
+  </head>
+  <body>
+    <canvas class="ambient-canvas" id="ambient-canvas" aria-hidden="true"></canvas>
+    <header class="site-head">
+      <a class="brand" href="/">
+        <img class="brand-mark" src="/assets/icon_128.png" alt="" width="28" height="28" />
+        Eleven
+      </a>
+      <nav class="site-nav" aria-label="Site">
+        <a href="/features/">Features</a>
+        <a href="/security/">Security</a>
+        <a href="/about/">About</a>
+        <a class="nav-signin" href="https://home.elevenmessenger.com">Sign in</a>
+      </nav>
+    </header>
+
+    <main>
+<section class="prose">
+  <h1>Privacy</h1>
+  <p class="updated">Last updated 13 July 2026</p>
+
+  <p>
+    Eleven is built so your conversations belong to you and whoever
+    you’re talking to. Not to us, and not to whoever happens to run the
+    server. Here’s what that actually means.
+  </p>
+
+  <h2>What only you and your recipients can read</h2>
+  <p>
+    Your device encrypts each message before it’s sent and decrypts it
+    when it arrives. The server stores and relays ciphertext it has no
+    way to open. That covers:
+  </p>
+  <ul>
+    <li>the text of every message;</li>
+    <li>attachments, including their file names;</li>
+    <li>the sender’s name as it’s carried inside each message;</li>
+    <li>display names on the member list;</li>
+    <li>group names and photos.</li>
+  </ul>
+
+  <h2>What the server can see</h2>
+  <p>
+    Delivering messages requires knowing a couple of things, though never
+    their contents:
+  </p>
+  <ul>
+    <li>
+      <strong>Who’s in a chat together.</strong> The server routes
+      messages to a chat’s members, so it knows who’s in each one — as
+      keys, not names.
+    </li>
+    <li>
+      <strong>When, and how much.</strong> Message timing and sizes, as
+      with any messenger.
+    </li>
+  </ul>
+  <p>
+    It never sees your messages, your private key, or a chat’s key —
+    those only exist on your own devices. Steal the database and you’d
+    learn that keys talk to keys. You wouldn’t learn a name, or a word
+    anyone said.
+  </p>
+
+  <h2>What we don’t do</h2>
+  <ul>
+    <li>No analytics, no tracking, first-party or third-party.</li>
+    <li>No advertising. We don’t sell or share your data.</li>
+    <li>
+      No accounts, emails, or phone numbers to chat. You join with a
+      link. (Paying for a space is the one exception — see below.)
+    </li>
+  </ul>
+
+  <h2>If you pay for a space</h2>
+  <p>
+    Chatting needs no identity, but paying is a different contract: when
+    someone pays us, we need to know who they are. Payment happens on
+    Stripe’s page — Stripe collects your email and card details, and we
+    see the billing email (never the card). That identifies the payer
+    only: nobody else in the space gives us anything, and it connects to
+    nothing anyone says, which stays encrypted either way. We use it to
+    run your subscription, not for marketing.
+  </p>
+
+  <h2>Link previews</h2>
+  <p>
+    Post a web link and the server fetches that page once, to build a
+    preview card: title, description, thumbnail. For that one moment it
+    sees the URL. It doesn’t see the rest of your message. This is the
+    one exception, and it can be switched off.
+  </p>
+
+  <h2>GIF search</h2>
+  <p>
+    If you search for a GIF, your device asks Giphy directly, so Giphy
+    sees the search terms and your network address — never who you are on
+    Eleven or who you’re chatting with. Our server sees nothing; the GIF
+    you pick is encrypted like any other picture. Don’t use GIF search
+    and Giphy never hears from you.
+  </p>
+
+  <h2>Notifications</h2>
+  <p>
+    Push notifications go out encrypted and get decrypted on your own
+    device, so neither the notification service nor we can read them.
+  </p>
+
+  <h2>Keeping and losing data</h2>
+  <p>
+    Messages live on the server only as ciphertext, and every chat is its
+    own self-contained instance. Saving your sign-in takes one tap, and
+    from then on any device can let you back in — the saved copy is
+    itself encrypted with a key only your devices hold. Skip that, lose
+    your only device, and the keys are gone, along with any history only
+    you could read. We never had them to lose.
+  </p>
+
+  <h2>Children</h2>
+  <p>
+    Eleven is meant for families to use together. It collects nothing
+    beyond the display name a member picks, and there’s no advertising,
+    no feed, and no way for a stranger to reach in.
+  </p>
+
+  <h2>Contact</h2>
+  <p>
+    Questions about privacy? Email
+    <a href="mailto:team@elevenmessenger.com">team@elevenmessenger.com</a>.
+  </p>
+
+  <p class="fine">
+    This page describes how the app works today. It’s meant to be honest,
+    not to be legal advice.
+  </p>
+</section>
+</main>
+
+    <footer class="site-foot">
+      <p>The group chat of your dreams. No ads, no tracking, no big tech — just your people.</p>
+      <ul class="foot-links">
+        <li><a href="/about/">About Eleven</a></li>
+        <li><a href="/everyone/">Built for everyone</a></li>
+        <li><a href="/privacy/">Privacy</a></li>
+        <li><a href="https://status.elevenmessenger.com">Status</a></li>
+        <li><a href="https://github.com/elevenmessenger/releases">Downloads</a></li>
+        <li><a href="mailto:team@elevenmessenger.com">team@elevenmessenger.com</a></li>
+      </ul>
+    </footer>
+    <script type="module" src="/ambient.js"></script>
+  </body>
+</html>
