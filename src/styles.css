@@ -11,6 +11,9 @@
   --ink: light-dark(#1c2333, #e7e9f0);
   --muted: light-dark(#5a6170, #9aa1b3);
   --border: light-dark(#e7e9f0, rgba(255, 255, 255, 0.1));
+  /* Boundaries of *controls*, which WCAG 2.2 AA holds to 3:1 (SC 1.4.11) —
+     --border above is a decorative card edge and stays feather-light. */
+  --border-strong: light-dark(#7d8397, #6b7183);
   --accent: light-dark(#5666f0, #7d8bff);
   --accent-ink: light-dark(#ffffff, #0a0e2a);
   --quiet: light-dark(#eef0f6, #2a2e38);
@@ -224,13 +227,16 @@ main {
 .btn-primary:hover {
   filter: brightness(1.06);
 }
+/* The secondary sits beside a filled primary, so it carries a visible edge
+   but a quieter label — near-black ink outweighed the primary's own white. */
 .btn-ghost {
-  border-color: var(--border);
-  color: var(--ink);
+  border-color: var(--border-strong);
+  color: var(--muted);
   background: transparent;
 }
 .btn-ghost:hover {
   border-color: var(--ink);
+  color: var(--ink);
 }
 .is-soon {
   opacity: 0.55;
@@ -416,6 +422,52 @@ a.audience .go {
   color: var(--accent);
   font-weight: 600;
   font-size: 0.95rem;
+}
+/* Tiered variant (home): the primary panel with the punchline card riding
+   beside it, and the two remaining asides paired in a lower row beneath.
+   Columns are explicit — a spanning primary occupies every auto-fit track,
+   which blocks collapsing and leaves ghost columns. */
+.audiences-tiered {
+  grid-template-columns: repeat(6, 1fr);
+}
+.audiences-tiered a.audience-primary {
+  grid-column: span 4;
+  gap: 0.5rem;
+  padding: 1.9rem 2rem;
+}
+.audiences-tiered a.audience-primary h3 {
+  font-size: 1.5rem;
+  letter-spacing: -0.01em;
+}
+.audiences-tiered a.audience-primary p {
+  font-size: 1.05rem;
+  max-width: 46rem;
+}
+.audiences-tiered a.audience-aside {
+  grid-column: span 3;
+}
+/* The punchline (Enterprise) sits shotgun beside the primary. */
+.audiences-tiered a.audience-primary + a.audience-aside {
+  grid-column: span 2;
+}
+@media (max-width: 56rem) {
+  .audiences-tiered {
+    grid-template-columns: 1fr 1fr;
+  }
+  /* Same shape, evened out: primary + punchline up top, the pair below. */
+  .audiences-tiered a.audience-primary,
+  .audiences-tiered a.audience-aside,
+  .audiences-tiered a.audience-primary + a.audience-aside {
+    grid-column: auto;
+  }
+}
+@media (max-width: 38rem) {
+  .audiences-tiered {
+    grid-template-columns: 1fr;
+  }
+  .audiences-tiered a.audience-primary {
+    padding: 1.4rem 1.5rem;
+  }
 }
 
 /* ---- pricing ---- */
