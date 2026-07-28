@@ -25,7 +25,9 @@ git -C "$tmp" add -A
 git -C "$tmp" -c user.email="$(git config user.email)" \
               -c user.name="$(git config user.name)" \
               commit -q -m "Deploy site: local Eleventy build"
-git -C "$tmp" push -f "$(git remote get-url origin)" gh-pages
+# The site pack (demo screenshots) exceeds git's default 1 MiB HTTP buffer,
+# which GitHub's endpoint answers with HTTP 400 — raise it for this push only.
+git -C "$tmp" -c http.postBuffer=524288000 push -f "$(git remote get-url origin)" gh-pages
 rm -rf "$tmp"
 
 echo "Published _site to gh-pages — live at https://elevenmessenger.com/ within ~1 minute."
