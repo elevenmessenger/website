@@ -1,0 +1,182 @@
+---
+layout: base.njk
+title: Donate
+htmlTitle: Donate · Eleven
+description: Eleven has no funding — no investors, no ads, no growth targets. If you back what it stands for, a donation goes straight into the 11 factor principles and distributing affordable, top-tier software.
+permalink: /donate/
+---
+
+<!-- 👨 The prose on this page is Paul's, verbatim (2026-07-22) — human-certified
+     copy, off-limits to AI rewriting. The donate widget + script below stay 🤖. -->
+<section class="prose">
+  <h1>Support Eleven</h1>
+
+  <p id="thanks" hidden>
+    <strong>Thank you.</strong> Your donation landed and it means a lot —
+    it goes straight to work. That&rsquo;s the whole ceremony; there is no
+    mailing list.
+  </p>
+
+  <h2>There&rsquo;s no funding</h2>
+  <p>
+    Eleven has no investors, no ad money, and no growth team. So far,
+    it&rsquo;s been independently funded by <a href="http://ti.to">Team
+    Tito</a>, and <a href="https://lazyatom.com">James Adam</a> and
+    hasn&rsquo;t <a href="https://status.elevenmessenger.com/books.html">cost
+    too much</a>. It&rsquo;s a project in defiance of big tech and of
+    over-complexity in software distribution — proof that a small team can
+    build top-tier, secure software and hand it to people simply: starting
+    with affordable &ldquo;cloud&rdquo; hosting, all the way to a single
+    binary you can host yourself. There&rsquo;s no tracking, no dark
+    patterns. It&rsquo;s an experiment in rethinking how software is
+    produced, operated and distributed.
+  </p>
+  <p>
+    If you support those ideas, you can back us directly. We&rsquo;ll
+    plough every donation into creating a software organisation that acts in
+    a verifiably and independently auditable way, that promotes a commitment
+    to a new bar in standards for security, privacy, ownership, respect,
+    openness, and transparency.
+  </p>
+  <p>
+    If we do take on any investment money, it will be under
+    <a href="https://status.elevenmessenger.com/funding.html">open terms and
+    a transparent returns model</a>, in line with a commitment to
+    <a href="https://status.elevenmessenger.com/books.html">open ledger
+    books</a>, and
+    <a href="https://status.elevenmessenger.com/economics.html">open unit
+    economics</a>.
+  </p>
+
+  <h2>Bear in mind</h2>
+  <p>
+    Eleven isn&rsquo;t a charity. It&rsquo;s not even a company yet. A
+    donation buys nothing, promises nothing, and isn&rsquo;t tax-deductible.
+    It&rsquo;s just voting with your wallet to add fuel to the fire against
+    the malfeasance of a generation of software &ldquo;pioneers&rdquo; who
+    have treated data like oil and built their own extraction industry
+    around it.
+  </p>
+  <p>
+    If you can&rsquo;t afford to donate: <strong>DO NOT DONATE.</strong>
+    Paul and James have enough. Only throw money at us if you have way more
+    than you need and you like popcorn.
+  </p>
+
+  <h2>What&rsquo;s the catch?</h2>
+  <p>
+    The catch is this is an AI-driven project.
+  </p>
+  <p>
+    The ideas behind Eleven are the culmination of years of disillusionment
+    accrued over thousands of paper cuts and a treadmill of software being
+    released with good intentions and turning shit when the economic
+    interests of the creators stopped aligning with the interests of the
+    customers.
+  </p>
+  <p>
+    This is a project that wouldn&rsquo;t exist without AI. The manner in
+    which LLMs have been trained on stolen knowledge is reprehensible. The
+    lies, the hype, the shady tactics, the ecological impact, everything.
+    But the technology allows for uncompromising, rapid software development
+    at a rate never seen before, and a rapid interaction cycle of asking:
+    &ldquo;but what if we did it this way?&rdquo;.
+  </p>
+  <p>
+    Eleven is an attempt to show people who use AI flippantly to fart out
+    slop that maybe, just maybe, it can also be used to craft new, better
+    things, and rather than just dream about better technology built for
+    humans, to just make it.
+  </p>
+
+  <h2>Donate</h2>
+  <div class="donate-row">
+    <button class="btn btn-ghost donate-amt" data-minor="111100">€1,111</button>
+    <button class="btn btn-ghost donate-amt" data-minor="1111100">€11,111</button>
+    <button class="btn btn-ghost donate-amt" data-minor="11111100">€111,111</button>
+  </div>
+  <form id="donate-custom" class="donate-custom">
+    <label for="donate-amount">Or pick your own amount</label>
+    <div class="donate-row">
+      <select id="donate-cur" aria-label="Currency">
+        <option value="eur" selected>€ EUR</option>
+        <option value="usd">$ USD</option>
+        <option value="gbp">£ GBP</option>
+      </select>
+      <input id="donate-amount" type="number" min="1111" step="0.01" placeholder="1111.00"
+             inputmode="decimal" aria-describedby="donate-note" />
+      <button class="btn btn-primary" type="submit">Donate</button>
+    </div>
+  </form>
+  <p class="fine" id="donate-note">
+    Pay what you want, from €1,111. Payment runs on Stripe&rsquo;s hosted
+    page; we never see your card.
+  </p>
+  <p class="fine" id="donate-error" role="alert" hidden></p>
+</section>
+
+<style>
+  /* 🤖 One control height across the whole form — the presets, the currency
+     select, the amount field, and the button all sit on the same line-height
+     so nothing reads as an afterthought. Fields match the site's pill
+     language (999px, 1.5px borders) without pretending to be buttons. */
+  .donate-row { display: flex; gap: 0.6rem; flex-wrap: wrap; align-items: stretch; }
+  .donate-row > * { min-height: 2.9rem; }
+  .donate-amt { min-width: 6.5rem; font-variant-numeric: tabular-nums; }
+  .donate-custom { margin-top: 1.25rem; }
+  .donate-custom label { display: block; margin-bottom: 0.5rem; font-weight: 600; }
+  .donate-custom select,
+  .donate-custom input {
+    font: inherit;
+    color: inherit;
+    background: transparent;
+    border: 1.5px solid color-mix(in srgb, currentColor 25%, transparent);
+    border-radius: 999px;
+    padding: 0.55rem 1.1rem;
+  }
+  .donate-custom select { padding-right: 0.9rem; }
+  .donate-custom input { width: 8.5rem; }
+  /* the number spinners fight the pill shape — the keyboard still steps */
+  .donate-custom input::-webkit-outer-spin-button,
+  .donate-custom input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+  .donate-custom input[type="number"] { -moz-appearance: textfield; appearance: textfield; }
+</style>
+
+<script type="module">
+  // 🤖 Same shape as the Enterprise page: the static site has no backend, so
+  // checkout mints on the cloud service (CORS-scoped to this origin).
+  const CHECKOUT_URL = "https://cloud.elevenmessenger.com/api/donate/checkout";
+  const err = document.getElementById("donate-error");
+  if (new URLSearchParams(location.search).get("thanks") === "1") {
+    document.getElementById("thanks").hidden = false;
+  }
+  async function donate(amountMinor, currency) {
+    err.hidden = true;
+    try {
+      const resp = await fetch(CHECKOUT_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ amount_minor: amountMinor, currency }),
+      });
+      const body = await resp.json();
+      if (!resp.ok || !body.url) throw new Error(body.message || "checkout failed");
+      location.href = body.url;
+    } catch (e) {
+      err.textContent = "Couldn’t start the checkout — " + e.message + ". Please try again.";
+      err.hidden = false;
+    }
+  }
+  for (const b of document.querySelectorAll(".donate-amt")) {
+    b.addEventListener("click", () => donate(Number(b.dataset.minor), "eur"));
+  }
+  document.getElementById("donate-custom").addEventListener("submit", (ev) => {
+    ev.preventDefault();
+    const v = Number(document.getElementById("donate-amount").value);
+    if (!Number.isFinite(v) || v < 1111) {
+      err.textContent = "Donations start at 1,111 — see Bear in mind above.";
+      err.hidden = false;
+      return;
+    }
+    donate(Math.round(v * 100), document.getElementById("donate-cur").value);
+  });
+</script>
