@@ -1,0 +1,111 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>The proving ground — Running the fleet</title>
+<link rel="stylesheet" href="guide.css" />
+<script src="guide.js" defer></script>
+</head>
+<body data-page="dev.html">
+<div class="frame">
+<nav class="side"></nav>
+<main class="content">
+<div class="wrap">
+
+<header class="top">
+  <p class="eyebrow"><span class="robot">&#129302;</span> Running the fleet &middot; Part 09 of 10</p>
+  <h1>The proving ground: the dev mesh</h1>
+  <p class="thesis">Before a change reaches a space that a real person uses, it is proven on a second, smaller fleet that is <strong>sealed off from production by construction</strong>: a two-box, two-country mesh that holds no member data, physically cannot reach the production object store, and updates from its own release feed. It exists so that the production fleet can stay hard to touch while the software that runs on it can still be changed quickly and safely.</p>
+</header>
+
+<div class="sysmap" data-highlight="peer bucket updater"></div>
+<p class="sysmap-caption">You are here: the whole map again, but as a second, complete copy of itself &mdash; its own peer boxes, its own object store, and its own release feed. Nothing on this page shares state with the production fleet; that separation is the point.</p>
+
+<div class="plain">
+  <span class="label">Read this first: what the dev mesh is, and is not</span>
+  <p>The dev mesh is a <strong>build tool</strong>, not a place any member&rsquo;s space lives. It carries no real chats, no real accounts, and no production credential of any kind. Because it is sealed off from production and holds nothing worth stealing, it is deliberately relaxed and disposable &mdash; the opposite of the hardened production boxes. Everything on this page describes that second fleet, which by design runs <em>ahead</em> of production on in-review builds, so a &ldquo;running today&rdquo; badge here means &ldquo;operable on the dev fleet today&rdquo;, not &ldquo;already in the production release channel&rdquo;.</p>
+</div>
+
+<h2 id="why">Why a separate environment exists</h2>
+<p>The production fleet is deliberately difficult to touch. Operator access is over a private network tunnel only; direct login as the all-powerful root user is switched off; the few privileged actions an operator may take are fixed in a reviewed allowlist rather than a shell; and every operator session is written to a public ledger. That posture is exactly right for machines that hold members&rsquo; conversations &mdash; and it makes iteration slow. Standing up a new piece of infrastructure, watching it behave, and tearing it down again is a careful, audited exercise every time.</p>
+<p>The wrong way to make iteration faster would be to loosen production. The right way is a <strong>second fleet that is safe to be relaxed</strong>, precisely because it is walled off from everything that matters. That is the dev mesh: a place to stand things up and tear them down without the security ceremony, while still being a real, multi-box mesh &mdash; so nothing built there can quietly assume a single machine, and everything reaches production the disciplined way (a signed release, self-installed), never a hand-edit on a live box.</p>
+<div class="plain">
+  <span class="label">In plain words</span>
+  <p>Production is the locked building where the real conversations are kept, and getting in requires signing the book every time. The dev mesh is an identical but empty practice building next door: same floor plan, same locks, but nothing valuable inside, so you can rearrange the furniture freely. You only move a change into the real building once it has worked in the practice one.</p>
+</div>
+
+<h2 id="what">What it is: two boxes, two countries, two providers</h2>
+<p>The dev mesh is the smallest fleet that <em>proves</em> the distribution model rather than merely asserting it: two boxes, in two different countries, on two independent hosting providers, running on two different CPU architectures. One box would prove nothing about a mesh; two boxes that differ in every dimension that production will eventually differ in prove a great deal.</p>
+<div class="tablewrap">
+<table>
+  <tr><th>Country label</th><th>Hosting</th><th>Architecture</th><th>Role on the box</th></tr>
+  <tr><td><code>ie</code></td><td>A major cloud provider, reaching the shared store through an instance role (no stored keys on the box)</td><td>Arm, 64-bit</td><td>Router, control daemon, the dev provisioner, and the dev home server</td></tr>
+  <tr><td><code>fi</code></td><td>An independent provider, reaching the shared store through a tightly scoped access key</td><td>x86, 64-bit</td><td>Router and control daemon</td></tr>
+</table>
+</div>
+<p>The two architectures are chosen on purpose: the release feed builds every version for both, so a mixed-architecture mesh proves that both binaries deploy and interoperate for free, every publish. The two providers are chosen on purpose too: they reach the shared object store by the two different mechanisms production&rsquo;s own mixed fleet will use &mdash; one that can assume a cloud role and needs no stored key, and one that cannot and so carries a narrowly scoped key instead. The country labels (<code>ie</code>, <code>fi</code>) are mechanism-exercise only; because the dev mesh holds no member data, they carry <em>no</em> data-residency obligation, unlike the same labels in production (see <a href="#production-model">the production model</a> below).</p>
+
+<h2 id="sealed">Sealed off from production &mdash; by construction, not by convention</h2>
+<p>&ldquo;Cut off from production&rdquo; is not a rule someone remembers to follow; it is a property of how the dev mesh is built. Three separations make it structural:</p>
+<ul>
+  <li><strong>A different object store.</strong> Mesh membership is nothing more than <a href="mesh.html#membership">heartbeat objects written under a prefix</a> in a shared bucket. The dev mesh uses its <em>own, separate</em> bucket, so a dev box physically cannot join the production mesh &mdash; not even if it were misconfigured to try. The same bucket also holds the dev mesh&rsquo;s hibernation data and its per-space leases, so no dev process ever reaches for a production object at all.</li>
+  <li><strong>A different release feed.</strong> Production boxes follow the signed production channels (<a href="deploys.html#auto-updates">part 04</a>). The dev boxes are meant to follow a dev feed instead, so that a dev publish can never surprise a production box and a production publish never disturbs dev. Promotion from dev to production is always a separate, deliberate publish &mdash; never an accident of a shared channel.</li>
+  <li><strong>Test-only secrets.</strong> Any credential on a dev box is a sandbox or test credential &mdash; a test AI key, test payment keys &mdash; never a production one. There is no member data to protect and no production system a leaked dev secret could reach.</li>
+</ul>
+<div class="why">
+  <span class="label">Why sealed-by-construction rather than sealed-by-configuration</span>
+  <p>A separation that depends on someone setting the right value can be undone by someone setting the wrong one. A separation that is baked into the shape of the system &mdash; a different bucket, so the coordinating storage room is simply a different room &mdash; cannot be undone by a typo. The strongest form of &ldquo;these two things cannot touch&rdquo; is when the mechanism that would let them touch does not exist between them.</p>
+</div>
+
+<h2 id="naming">Naming: a parallel universe</h2>
+<p>Production&rsquo;s per-country scheme places a space at <code>&lt;space&gt;.&lt;country&gt;.11ch.at</code>, rooted at the bare product domain. The dev mesh is a parallel universe rooted one level deeper, at <code>dev.11ch.at</code>, with the identical country structure beneath it:</p>
+<div class="tablewrap">
+<table>
+  <tr><th></th><th>An example space host</th><th>Rooted at</th></tr>
+  <tr><td><strong>Production</strong></td><td><code>xyz.ie.11ch.at</code></td><td><code>11ch.at</code></td></tr>
+  <tr><td><strong>Dev</strong></td><td><code>xyz.ie.dev.11ch.at</code></td><td><code>dev.11ch.at</code></td></tr>
+</table>
+</div>
+<p>Putting the environment <em>outermost</em> &mdash; <code>dev</code> as the widest label, with the country nested inside it &mdash; means every dev name in the whole fleet sits under one structural root. That is what makes &ldquo;everything dev&rdquo; a property of the name tree itself, not merely of configuration: one wildcard per country-and-environment points at the box that serves it, and a dev name can never be mistaken for, or resolve as, a production one.</p>
+
+<h2 id="proves">What the dev mesh proves</h2>
+<p>Two things, one about correctness and one about process.</p>
+
+<h3 id="placement">Per-country placement is correct</h3>
+<p>The mesh (<a href="mesh.html">part 07</a>) decides which box owns a space by <a href="mesh.html#placement">hashing the hostname over the live boxes</a>. On a single-country fleet that is enough. On a fleet where different boxes serve different countries, plain hashing is <em>not</em> enough: the hash could name a box in one country the owner of a space that belongs to another country &mdash; a box that then cannot serve it, because it holds no certificate for that country&rsquo;s domain and no routing row for that host. Ownership and ability would disagree, and the space would be stranded.</p>
+<p>The fix, which the two-country dev mesh is exactly the rig to prove, is to <strong>scope placement to the boxes that can actually serve a host</strong>. Each box advertises which country-domains it covers; both ownership (the hash) and the replication of routing rows are then narrowed to the boxes whose domains include the host in question. A space in one country is therefore owned, woken, and served only by that country&rsquo;s box, and its routing row is never even copied to the other country&rsquo;s box. Proving this needs two boxes that genuinely disagree about who the raw hash would pick &mdash; which is precisely what two boxes in two countries give you. On a single-wildcard production mesh (two boxes both serving the same domain) the scoping is a harmless no-op, so the same code is safe everywhere.</p>
+
+<h3 id="discipline">Changes roll out the disciplined way</h3>
+<p>The load-bearing rule the dev mesh enforces is simple: <strong>everything ships by publishing to a feed and letting boxes install it themselves; nothing ships by editing a live box by hand.</strong> A change is published to the dev feed, both dev nodes are watched as they converge on it, and it is exercised across the real two-box topology &mdash; and only then is it published to production. The dev mesh is where single-box assumptions and rollout breakage are found, which is the whole reason it is a mesh and not a single box. If a change cannot be rolled out cleanly to two boxes that differ in country, provider, and architecture, that is a fact worth learning before members are involved, not after.</p>
+
+<h2 id="production-model">The production model this rehearses</h2>
+<p>The dev mesh is not an end in itself; it is a rehearsal for a production endgame that is mostly still design. In that endgame, every country is its own subdomain with a wildcard pointing at that country&rsquo;s mesh, so routing splits into a coarse, almost-never-changing part (which country, decided in DNS) and a fine, dynamic part (which box in that country owns the space, decided by the in-country lease and hash). A space in a given country stays in that country, with no cross-country proxy hop, and <strong>data residency becomes a property of the space&rsquo;s name</strong> &mdash; a public promise the infrastructure must be able to keep before any country subdomain ships. The same per-country substrate is where a co-operative of independent providers eventually plugs in: a country&rsquo;s wildcard could point at any enrolled in-country provider&rsquo;s mesh.</p>
+<div class="roadmap">
+  <span class="label">Designed, not built: the per-country production fleet</span>
+  <p>None of the production per-country model above is operable today. Production runs a small number of boxes that share a single wildcard domain, so the placement scoping this dev fleet proves is currently a no-op there. Country subdomains, the residency promise that would ride on them, per-country object stores as authoritative primaries, and the provider co-op seam are all written design (<code>docs/planet-scale.md</code>, <code>docs/dev-mesh.md</code>) with schema fields or interfaces cut for them, and no member-facing behaviour yet. The dev mesh exists so that when those do ship, they ship having already run.</p>
+</div>
+
+<h2 id="status">What is built here today, and what is not</h2>
+<p>The badges below use the same three levels as the rest of the guide, read against the dev fleet: <span class="status built">running today</span> means operable on the dev mesh now; <span class="status partial">partially built</span> means a first half exists; <span class="status planned">designed, not built</span> means written design and no operable code.</p>
+<div class="tablewrap">
+<table>
+  <tr><th>Capability</th><th>Status</th><th>What exists</th></tr>
+  <tr><td>The two-box, two-country, two-provider, cross-architecture dev mesh</td><td><span class="status built">running today</span></td><td>Both nodes run, form one mesh over a shared, dev-only object store, and each serves its own country&rsquo;s spaces.</td></tr>
+  <tr><td>Per-country scoped placement (each box advertises its domains; ownership and route replication narrow to boxes that cover the host)</td><td><span class="status partial">partially built</span></td><td>Proven end-to-end on the dev mesh in both directions, on an in-review build. It reaches production only once that change is reviewed and published; until then production&rsquo;s single wildcard makes the scoping a no-op there.</td></tr>
+  <tr><td>A dedicated dev release feed, so the dev boxes self-update cut off from production</td><td><span class="status planned">designed, not built</span></td><td>Today the dev boxes take new builds by hand and keep their hourly auto-updater switched off &mdash; deliberately, so a dev box can never pull the production feed before a dev feed exists to point it at.</td></tr>
+  <tr><td>Managed-AI bot sidecars provisioned to the box that owns their space (per-country sidecar placement)</td><td><span class="status planned">designed, not built</span></td><td>The residency boundary for a sidecar is the same as for its space; proving per-country sidecar placement is the next thing the dev mesh is meant to rehearse. See <code>docs/ai-provisioning.md</code>.</td></tr>
+  <tr><td>The per-country production meshes (country subdomains, residency promise, provider co-op)</td><td><span class="status planned">designed, not built</span></td><td>The production endgame this whole fleet exists to rehearse. See <a href="#production-model">above</a> and <code>docs/planet-scale.md</code>.</td></tr>
+</table>
+</div>
+
+<div class="warn">
+  <span class="label">Operator note</span>
+  <p>The concrete, changing details of the dev fleet &mdash; the two nodes&rsquo; addresses, the exact bucket, the access split, and how to swap a build onto them &mdash; live in the repository document <code>docs/dev-mesh.md</code>, deliberately kept out of this published page. This guide describes the shape and the reasons; that document holds the current facts.</p>
+</div>
+
+</div>
+</main>
+</div>
+</body>
+</html>

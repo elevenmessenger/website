@@ -1,0 +1,156 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Creating and removing chat spaces — Running the fleet</title>
+<link rel="stylesheet" href="guide.css" />
+<script src="guide.js" defer></script>
+</head>
+<body data-page="spaces.html">
+<div class="frame">
+<nav class="side"></nav>
+<main class="content">
+<div class="wrap">
+
+<header class="top">
+  <p class="eyebrow"><span class="robot">&#129302;</span> Running the fleet &middot; Part 05 of 10</p>
+  <h1>Creating and removing chat spaces</h1>
+  <p class="thesis">A new chat space is a hostname, a minted admin token, an environment file, a registry row, and (usually) a started process. This page walks the manual commands first — <strong><code>add-instance</code> and <code>remove</code></strong> — and then the self-serve pipeline that lets signed-in users create their own spaces: <strong>the control daemon, the cloud provisioner, and the reaper</strong> that quietly reclaims spaces nobody ever claimed.</p>
+</header>
+
+<div class="sysmap" data-highlight="control"></div>
+<p class="sysmap-caption">You are here: the control daemon and cloud provisioner. The manual commands on this page do the same work the control daemon does, from your terminal instead of over its socket.</p>
+
+<h2 id="adding-manual">Adding a space by hand: <code>lchat add-instance</code></h2>
+<p>One command creates a fully working space. Before running it, the only prerequisite is DNS: the hostname must resolve to the box. With a wildcard DNS record (<code>*.example.com &rarr; the box&rsquo;s address</code>) every subdomain already resolves, so there is no per-space DNS step at all.</p>
+<figure class="cmd">
+<figcaption>Run on the box, as root</figcaption>
+<pre><code>lchat add-instance chat-c.example.com
+<span class="out">setup link:  https://chat-c.example.com/#setup=Xk3&hellip;   (one-time; give this to the space&rsquo;s owner)
+admin link:  https://chat-c.example.com/admin#token=9f2&hellip;</span></code></pre>
+</figure>
+<p>What just happened, in order — this sequence is worth reading once carefully, because <code>remove</code>, hibernation, and migration all make sense in terms of it:</p>
+<ol>
+  <li><strong>Validate and register.</strong> The hostname is checked (it becomes a filename, a unit name, and a socket path, so it must be a clean domain name), an admin token is minted, and a row is written to the <a href="router.html#the-registry">registry</a> with status <code>creating</code>.</li>
+  <li><strong>Write the environment file.</strong> <code>/data/chat-c.example.com.env</code> (mode 0600) receives <code>LCHAT_ADMIN_TOKEN=&hellip;</code> plus any per-instance settings passed as flags. Remember from <a href="processes.html#data">part 03</a>: the database will store only a <em>hash</em> of the admin token, so this file is the token&rsquo;s only recoverable copy.</li>
+  <li><strong>Point the version link.</strong> The currently running build is staged into the version store if it is not already there, and <code>/opt/lchat/live/chat-c.example.com</code> is created pointing at it — so the new instance starts on a known build (see <a href="deploys.html#mental-model">part 04</a>).</li>
+  <li><strong>Start and health-check the process.</strong> <code>systemctl enable --now lchat@chat-c.example.com</code>, then wait up to fifteen seconds for the socket to answer. On failure the row is marked <code>failed</code> with the error recorded (visible in <code>lchat instances</code>), and the files are left in place for diagnosis.</li>
+  <li><strong>Publish the route and warm the certificate.</strong> The registry row flips to <code>ready</code>, the router reloads, and the command makes one HTTPS request through the router with the real hostname — which triggers the Let&rsquo;s Encrypt issuance (<a href="router.html#http01">part 02</a>) so the first member does not pay that wait.</li>
+  <li><strong>Mint the setup invite.</strong> A one-time setup link is created (this also pre-seeds the space&rsquo;s admin member). The setup link is what you hand to the person who asked for the space; the admin link is the operator-level console.</li>
+</ol>
+<p>Useful flags, all optional: <code>--admin-token &lt;tok&gt;</code> imports an existing token instead of minting one (essential when <a href="operations.html#migration">migrating</a> a space between boxes, because a new token would invalidate every saved admin link); <code>--push-relay-url</code> / <code>--push-relay-token</code>, <code>--home-origin</code>, <code>--app-store-url</code> record per-instance service configuration into the environment file; and <code>--hibernate</code> registers the space as activator-managed from birth (<a href="#hibernating-creates">below</a>).</p>
+<div class="warn">
+  <span class="label">Store the admin token somewhere safe, immediately</span>
+  <p>Treat the printed admin link like a password: store it in your secrets manager as soon as the command returns. If it is lost, <code>lchat admin-link chat-c.example.com</code> recovers it from the environment file — but only while that file exists on that box.</p>
+</div>
+
+<h2 id="removing">Removing a space: <code>lchat remove</code>, and why deletion archives</h2>
+<p>Removal is deliberately layered, because &ldquo;stop serving this hostname&rdquo; and &ldquo;destroy this data&rdquo; are different decisions:</p>
+<ol class="procedure">
+  <li><p class="step-title">Take the space off the internet (data untouched).</p>
+  <figure class="cmd">
+  <figcaption>Run on the box, as root</figcaption>
+  <pre><code>lchat remove chat-c.example.com --stop</code></pre>
+  </figure>
+  <p><code>remove</code> deletes the registry row and reloads the router, so the hostname stops being served; <code>--stop</code> also stops and disables the instance unit and its bot sidecar unit. Without <code>--stop</code>, the process keeps running but receives no traffic. Either way, <strong>the database, blobs, and environment file remain on disk</strong> — re-running <code>add-instance</code> for the same host (with <code>--admin-token</code> from the old environment file) brings the space straight back.</p></li>
+  <li><p class="step-title">Only if the data should go: archive it into the trash.</p>
+  <p>Full deletion — the path the self-serve pipeline uses — moves the database, environment file, write-ahead log, push key, and blob directory into <code>/data/trash/&lt;host&gt;-&lt;timestamp&gt;/</code>, and removes the certificate and version link. Nothing in this system unlinks user data directly; the trash directory is the safety net, and a mistaken deletion is recovered by moving the files back and re-running <code>add-instance</code>.</p></li>
+  <li><p class="step-title">Eventually, the trash is purged (only if configured).</p>
+  <p>The control daemon sweeps <code>/data/trash</code> daily and deletes archives older than <code>LCHAT_TRASH_KEEP_DAYS</code> days. The default is <code>0</code>, which means <strong>keep forever</strong> — purging is opt-in, and the retention window should comfortably exceed the reaper&rsquo;s thresholds below so that any automated reclaim stays reversible for weeks.</p></li>
+</ol>
+<div class="plain">
+  <span class="label">In plain words</span>
+  <p>Removing a space is like taking a folder out of the filing cabinet and putting it in a banker&rsquo;s box in the basement, with the date written on it. Only a separately configured janitor ever shreds the boxes, and by default there is no janitor.</p>
+</div>
+<p>One deliberate exception: for a <a href="hibernation.html">hibernating</a> space, the parked copy of its database in the S3 bucket is <em>not</em> deleted by the deletion path — the box&rsquo;s control daemon holds no bucket credentials on purpose. Cleaning old parked prefixes is left to the bucket&rsquo;s lifecycle rules.</p>
+
+<h2 id="self-serve">The self-serve pipeline: how a member creates a space with no operator</h2>
+<p>Members of the product can create new spaces themselves (&ldquo;Create a space&rdquo; in the app). No human runs <code>add-instance</code> for those — instead a request flows through three services, each with a narrow job, and understanding the chain makes the failure modes obvious:</p>
+<figure class="diagram">
+<svg viewBox="0 0 740 150" role="img" aria-label="Diagram: a member's device calls the home server, which calls the cloud provisioner, which calls the control daemon, which creates the instance.">
+  <rect x="16" y="50" width="130" height="52" rx="7" fill="var(--diagram-box)" stroke="var(--rule)"></rect>
+  <text x="81" y="72" font-size="11.5" font-weight="600" text-anchor="middle">member&rsquo;s device</text>
+  <text x="81" y="88" font-size="9.5" fill="var(--muted)" text-anchor="middle">signed in to home</text>
+  <rect x="196" y="50" width="130" height="52" rx="7" fill="var(--diagram-box)" stroke="var(--rule)"></rect>
+  <text x="261" y="72" font-size="11.5" font-weight="600" text-anchor="middle">home server</text>
+  <text x="261" y="88" font-size="9.5" fill="var(--muted)" text-anchor="middle">eligibility gate</text>
+  <rect x="376" y="50" width="130" height="52" rx="7" fill="var(--diagram-box)" stroke="var(--rule)"></rect>
+  <text x="441" y="72" font-size="11.5" font-weight="600" text-anchor="middle">cloud provisioner</text>
+  <text x="441" y="88" font-size="9.5" fill="var(--muted)" text-anchor="middle">policy: quotas, names</text>
+  <rect x="556" y="50" width="130" height="52" rx="7" fill="var(--diagram-box)" stroke="var(--rule)"></rect>
+  <text x="621" y="72" font-size="11.5" font-weight="600" text-anchor="middle">control daemon</text>
+  <text x="621" y="88" font-size="9.5" fill="var(--muted)" text-anchor="middle">capacity + creation</text>
+  <line x1="146" y1="76" x2="196" y2="76" stroke="var(--muted)" stroke-width="1.2"></line>
+  <line x1="326" y1="76" x2="376" y2="76" stroke="var(--muted)" stroke-width="1.2"></line>
+  <line x1="506" y1="76" x2="556" y2="76" stroke="var(--muted)" stroke-width="1.2"></line>
+  <text x="171" y="66" font-size="9" fill="var(--muted)" text-anchor="middle">HTTPS</text>
+  <text x="351" y="66" font-size="9" fill="var(--muted)" text-anchor="middle">caller token</text>
+  <text x="531" y="66" font-size="9" fill="var(--muted)" text-anchor="middle">root-only token,</text>
+  <text x="531" y="76" font-size="9" fill="var(--muted)" text-anchor="middle">local socket</text>
+  <text x="370" y="130" font-size="10" fill="var(--muted)" text-anchor="middle">Each hop narrows trust: the internet-facing services hold policy; only the local, root-only daemon can actually change the box.</text>
+</svg>
+</figure>
+
+<h3 id="controld">The control daemon (<code>lchat controld</code>): the only process allowed to change the box</h3>
+<p>The control daemon is the &ldquo;god surface&rdquo;: it is the one process permitted to run <code>systemctl</code> and write the software store, which is why it runs as root, listens <strong>only on a local unix socket</strong> (<code>/run/lchat/control.sock</code>), and is never given a public hostname. Its API is four endpoints — create an instance, delete an instance, report a space&rsquo;s statistics, set a space&rsquo;s storage quota — and every call must present a bearer token whose only copy lives in the root-only file <code>/etc/lchat/control.token</code>. (Socket file permissions alone cannot be the gate, because every sandboxed service on the box shares the same <code>lchat</code> user; the root-only token is what distinguishes the cloud provisioner, which is handed the token by systemd&rsquo;s <code>LoadCredential</code> mechanism, from a hypothetically compromised instance, which cannot read it.)</p>
+<p>Its create endpoint enforces <strong>capacity</strong> before doing anything: at most <code>LCHAT_MAX_INSTANCES</code> running instances (default 40), and at least <code>LCHAT_MIN_FREE_GB</code> of free disk (default 5). At capacity it answers <code>503 at_capacity</code> and the refusal propagates up the chain as a polite &ldquo;try again later&rdquo; to the member. Configure these in <code>/data/control.env</code> and restart <code>lchat-control</code>.</p>
+
+<h3 id="cloud">The cloud provisioner (<code>lchat cloud</code>): policy, in public</h3>
+<p>The cloud provisioner is the internet-facing half, running unprivileged behind the router like any other service (registered with <code>lchat add-service</code>). It holds everything that is <em>policy</em> rather than <em>power</em>:</p>
+<ul>
+  <li><strong>Caller tokens.</strong> Services that may request creations (in practice: the home server) authenticate with tokens the operator mints at runtime — <code>POST /api/admin/tokens</code> with the provisioner&rsquo;s admin token; tokens are stored hashed and are revocable individually.</li>
+  <li><strong>Quotas.</strong> Each requesting user may hold at most <code>LCHAT_CLOUD_QUOTA</code> (default 3) <em>free</em> spaces at a time; a deleted space frees its slot, and a paid space does not count. There is also an optional fleet-wide circuit breaker, <code>LCHAT_CLOUD_MAX_CREATES_PER_DAY</code>, whose count deliberately survives create-and-delete games.</li>
+  <li><strong>Names.</strong> New spaces get short subdomains like <code>k3f.example.com</code> — an encoding (sqids) of the space&rsquo;s ledger row number, so names are unique by construction, never reused, and carry no information. The base domain comes from <code>LCHAT_CLOUD_BASE_DOMAIN</code> and needs the wildcard DNS record.</li>
+  <li><strong>The ledger.</strong> Its own small database (<code>/data/cloud.db</code>) records who created what, plus the dormant billing rails: an opaque Stripe customer pointer and an entitlement flag per space — deliberately no email, name, or card data in the ledger itself (identity lives in Stripe, where the operator can see it). <span class="status partial">partially built</span> (dormant until the Stripe environment variables are set).</li>
+</ul>
+<p>Upstream of both sits the <strong>home server&rsquo;s eligibility gate</strong>: it forwards a creation request only for a signed-in account that already holds at least one space backup, which keeps space creation invitation-shaped without the server reading anything encrypted. The member&rsquo;s identity crosses to the provisioner only as an opaque random identifier — the quota is per that identifier, and no personal information flows down the chain.</p>
+
+<h3 id="enabling-self-serve">Enabling the pipeline on a box, once</h3>
+<ol class="procedure">
+  <li><p class="step-title">Start the control daemon.</p>
+  <figure class="cmd"><figcaption>Run on the box, as root</figcaption>
+  <pre><code>systemctl enable --now lchat-control     # the token at /etc/lchat/control.token was minted by bootstrap</code></pre></figure></li>
+  <li><p class="step-title">Configure and start the cloud provisioner.</p>
+  <figure class="cmd"><figcaption>Run on the box, as root — /data/cloud.env, then start</figcaption>
+  <pre><code>cat &gt; /data/cloud.env &lt;&lt;'EOF'
+LCHAT_ADMIN_TOKEN=&lt;a fresh secret for the provisioner&rsquo;s own admin API&gt;
+LCHAT_CLOUD_BASE_DOMAIN=example.com
+LCHAT_CLOUD_QUOTA=3
+EOF
+chown lchat:lchat /data/cloud.env &amp;&amp; chmod 600 /data/cloud.env
+systemctl enable --now lchat-cloud</code></pre></figure></li>
+  <li><p class="step-title">Give the provisioner a public hostname through the router.</p>
+  <figure class="cmd"><figcaption>Run on the box, as root</figcaption>
+  <pre><code>lchat add-service cloud.example.com --socket /run/lchat/cloud.sock</code></pre></figure></li>
+  <li><p class="step-title">Mint a caller token and hand it to the home server.</p>
+  <figure class="cmd"><figcaption>Run on the box</figcaption>
+  <pre><code>curl -s -X POST https://cloud.example.com/api/admin/tokens \
+  -H "Authorization: Bearer &lt;the provisioner admin token&gt;" -d '{"label":"home"}'
+<span class="out">{"id":1,"token":"&lt;shown exactly once — copy it now&gt;"}</span>
+# then add to /data/home.env:  LCHAT_CLOUD_URL=https://cloud.example.com
+#                              LCHAT_CLOUD_TOKEN=&lt;the minted token&gt;
+systemctl restart lchat-home</code></pre></figure></li>
+</ol>
+
+<h2 id="reaper">The reaper: reclaiming spaces nobody ever claimed</h2>
+<p>Self-serve creation produces abandonment: someone creates a space, never finishes setting it up, and its slot counts against capacity forever. The reaper is the cloud provisioner&rsquo;s answer, and it is engineered to be terrified of false positives:</p>
+<ul>
+  <li><strong>Only ledger spaces are candidates.</strong> It considers only spaces the self-serve pipeline itself created (rows in <code>/data/cloud.db</code>) — operator-created instances, the home server, and the push relay are structurally not candidates. Paid spaces are excluded at the query level.</li>
+  <li><strong>&ldquo;Never claimed&rdquo; requires three signals to agree.</strong> A space is reclaimed only if its setup was never completed, <em>and</em> it has at most its one pre-seeded admin member, <em>and</em> it contains no messages or threads at all. Any error reading a space&rsquo;s statistics is a skip, never a reap. (A hibernating space that has never even woken has no database file; it is answered definitionally from its registry row rather than being treated as an error — otherwise register-only spaces could never be reclaimed.)</li>
+  <li><strong>It is off by default and bounded when on.</strong> Enable by setting <code>LCHAT_CLOUD_REAP_AFTER_DAYS</code> (choose a value comfortably past the seven-day life of the setup invite — fourteen is sensible); it sweeps every <code>LCHAT_CLOUD_REAP_INTERVAL_HOURS</code> (default 6), reclaims at most <code>LCHAT_CLOUD_REAP_MAX_PER_SWEEP</code> (default 5) spaces per sweep, and honours <code>LCHAT_CLOUD_REAP_DRY_RUN=1</code>, which logs what it <em>would</em> reclaim. Run the dry run for a few days before trusting it.</li>
+  <li><strong>Reaping is the archiving deletion</strong> described <a href="#removing">above</a> — into <code>/data/trash</code>, recoverable until the (separately configured, default-never) trash purge.</li>
+</ul>
+
+<h2 id="hibernating-creates">Spaces born asleep</h2>
+<p>On a box with <a href="hibernation.html">hibernation</a> enabled, creation can skip starting a process at all: <code>add-instance --hibernate</code> (or, for the whole self-serve pipeline, <code>LCHAT_CONTROL_HIBERNATE_CREATES=1</code> in <code>/data/control.env</code>) registers the space as activator-managed from birth. No systemd unit is created and no process runs; the first request to the hostname performs the first wake, which finds no parked database in the bucket and simply starts fresh. Capacity accounting changes accordingly: hibernating registrations are bounded by a row ceiling (<code>LCHAT_MAX_REGISTERED</code>, default ten times <code>LCHAT_MAX_INSTANCES</code>) rather than the running-process cap, because a sleeping space costs disk, not memory.</p>
+<div class="roadmap">
+  <span class="label">Partially built: creation is cheap, not yet free</span>
+  <p>The design&rsquo;s end state is that creating a space writes <em>only</em> a registry row and an object-storage prefix — microseconds, no files, with everything else materialising at first wake. Today&rsquo;s hibernating create is close but honest about the gap: it still writes the environment file, stages the binary, reloads the router, and performs one immediate wake, because minting the setup invite needs a running instance to pre-seed the admin member. Fully deferred materialisation remains roadmap, as does the eventual dissolution of the control daemon into the registry-only model.</p>
+</div>
+
+</div>
+</main>
+</div>
+</body>
+</html>

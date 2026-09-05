@@ -1,0 +1,444 @@
+/* 🤖 Shared stylesheet for the planet-scale operations guide.
+   One file styles every page; edit here and every page follows.
+   Design notes: warm paper + slate-blue ink, serif body for long reading,
+   sans headings, mono for anything typed into a terminal. Light and dark
+   are both first-class (prefers-color-scheme plus a data-theme override). */
+
+:root {
+  --paper: #fbfaf7;
+  --ink: #232f3c;
+  --muted: #5d6b77;
+  --accent: #29618e;
+  --accent-ink: #1d4d75;
+  --accent-soft: rgba(41, 97, 142, 0.09);
+  --signal: #a05a18;
+  --signal-soft: rgba(160, 90, 24, 0.10);
+  --good: #2f7a55;
+  --good-soft: rgba(47, 122, 85, 0.10);
+  --card: #ffffff;
+  --rule: #dfdcd2;
+  --shade: #f2f0e9;
+  --diagram-box: #eef1ec;
+  --mono: ui-monospace, "SF Mono", SFMono-Regular, Menlo, Consolas, monospace;
+  --serif: Charter, "Bitstream Charter", "Iowan Old Style", Georgia, serif;
+  --sans: -apple-system, "Segoe UI", system-ui, sans-serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --paper: #141b22;
+    --ink: #d9e2ea;
+    --muted: #8fa0ae;
+    --accent: #7fb3dc;
+    --accent-ink: #9cc6e8;
+    --accent-soft: rgba(127, 179, 220, 0.12);
+    --signal: #dca35c;
+    --signal-soft: rgba(220, 163, 92, 0.12);
+    --good: #6cbf94;
+    --good-soft: rgba(108, 191, 148, 0.12);
+    --card: #1b242e;
+    --rule: #2a3641;
+    --shade: #19222b;
+    --diagram-box: #1e2933;
+  }
+}
+:root[data-theme="dark"] {
+  --paper: #141b22; --ink: #d9e2ea; --muted: #8fa0ae; --accent: #7fb3dc;
+  --accent-ink: #9cc6e8; --accent-soft: rgba(127, 179, 220, 0.12);
+  --signal: #dca35c; --signal-soft: rgba(220, 163, 92, 0.12);
+  --good: #6cbf94; --good-soft: rgba(108, 191, 148, 0.12);
+  --card: #1b242e; --rule: #2a3641; --shade: #19222b; --diagram-box: #1e2933;
+}
+:root[data-theme="light"] {
+  --paper: #fbfaf7; --ink: #232f3c; --muted: #5d6b77; --accent: #29618e;
+  --accent-ink: #1d4d75; --accent-soft: rgba(41, 97, 142, 0.09);
+  --signal: #a05a18; --signal-soft: rgba(160, 90, 24, 0.10);
+  --good: #2f7a55; --good-soft: rgba(47, 122, 85, 0.10);
+  --card: #ffffff; --rule: #dfdcd2; --shade: #f2f0e9; --diagram-box: #eef1ec;
+}
+
+html { background: var(--paper); scroll-behavior: smooth; }
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  * { animation: none !important; transition: none !important; }
+}
+body {
+  margin: 0;
+  color: var(--ink);
+  background: var(--paper);
+  font: 17px/1.7 var(--serif);
+  -webkit-text-size-adjust: 100%;
+}
+
+/* ---- page frame: sidebar + content ---- */
+.frame { display: flex; min-height: 100vh; }
+nav.side {
+  width: 250px;
+  flex: none;
+  border-right: 1px solid var(--rule);
+  padding: 28px 20px 40px;
+  box-sizing: border-box;
+  position: sticky;
+  top: 0;
+  align-self: flex-start;
+  max-height: 100vh;
+  overflow-y: auto;
+  font-family: var(--sans);
+}
+nav.side .brand {
+  font: 700 15px/1.3 var(--sans);
+  margin: 0 0 4px;
+  letter-spacing: -0.01em;
+}
+nav.side .brand a { color: var(--ink); text-decoration: none; }
+nav.side .brand-sub {
+  font: 400 12px/1.5 var(--sans);
+  color: var(--muted);
+  margin: 0 0 20px;
+}
+nav.side ol { list-style: none; margin: 0; padding: 0; }
+nav.side li { margin: 0 0 2px; }
+nav.side a {
+  display: flex;
+  gap: 9px;
+  align-items: baseline;
+  padding: 6px 9px;
+  border-radius: 7px;
+  color: var(--ink);
+  text-decoration: none;
+  font: 400 13.5px/1.4 var(--sans);
+}
+nav.side a .num {
+  font: 600 10.5px/1 var(--mono);
+  color: var(--muted);
+  min-width: 16px;
+}
+nav.side a:hover { background: var(--accent-soft); }
+nav.side a[aria-current="page"] {
+  background: var(--accent-soft);
+  color: var(--accent-ink);
+  font-weight: 600;
+}
+nav.side a[aria-current="page"] .num { color: var(--accent-ink); }
+nav.side a:focus-visible,
+a:focus-visible, button:focus-visible, summary:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+main.content { flex: 1; min-width: 0; }
+.wrap { max-width: 730px; margin: 0 auto; padding: 0 28px 110px; }
+
+@media (max-width: 900px) {
+  .frame { display: block; }
+  nav.side {
+    position: static;
+    width: auto;
+    max-height: none;
+    border-right: none;
+    border-bottom: 1px solid var(--rule);
+    padding: 18px 20px;
+  }
+  nav.side ol { display: flex; flex-wrap: wrap; gap: 2px 6px; }
+  .wrap { padding: 0 20px 80px; }
+}
+
+/* ---- page header ---- */
+header.top { padding: 54px 0 6px; }
+.eyebrow {
+  font: 600 12px/1.4 var(--sans);
+  letter-spacing: 0.13em;
+  text-transform: uppercase;
+  color: var(--accent);
+  margin: 0 0 14px;
+}
+.eyebrow .robot { letter-spacing: 0; margin-right: 6px; }
+h1 {
+  font: 700 clamp(29px, 4.6vw, 38px)/1.14 var(--sans);
+  letter-spacing: -0.015em;
+  margin: 0 0 14px;
+  text-wrap: balance;
+}
+.thesis {
+  font-size: 19px;
+  line-height: 1.6;
+  color: var(--muted);
+  margin: 0 0 10px;
+  text-wrap: balance;
+}
+.thesis strong { color: var(--ink); font-weight: 600; }
+
+h2 {
+  font: 700 23px/1.28 var(--sans);
+  letter-spacing: -0.01em;
+  margin: 62px 0 12px;
+  text-wrap: balance;
+}
+h3 { font: 650 17.5px/1.35 var(--sans); margin: 36px 0 10px; }
+h4 { font: 650 15px/1.4 var(--sans); margin: 26px 0 8px; }
+p { margin: 0 0 17px; }
+ul, ol { margin: 0 0 17px; padding-left: 26px; }
+li { margin: 0 0 7px; }
+a { color: var(--accent-ink); text-decoration-color: color-mix(in srgb, var(--accent) 45%, transparent); text-underline-offset: 2.5px; }
+a:hover { text-decoration-color: var(--accent); }
+strong { font-weight: 650; }
+hr { border: none; border-top: 1px solid var(--rule); margin: 48px 0; }
+
+/* Anchored headings get a hover ¶ link (added by guide.js). */
+.hlink {
+  margin-left: 8px;
+  font: 400 0.75em var(--sans);
+  color: var(--muted);
+  text-decoration: none;
+  opacity: 0;
+}
+h2:hover .hlink, h3:hover .hlink, .hlink:focus-visible { opacity: 1; }
+
+/* ---- code ---- */
+code {
+  font: 0.85em var(--mono);
+  background: var(--accent-soft);
+  padding: 1px 5px;
+  border-radius: 4px;
+  overflow-wrap: break-word;
+}
+pre {
+  font: 13px/1.65 var(--mono);
+  background: var(--card);
+  border: 1px solid var(--rule);
+  border-radius: 10px;
+  padding: 14px 16px;
+  overflow-x: auto;
+  margin: 16px 0;
+}
+pre code { background: transparent; padding: 0; }
+pre .comment { color: var(--muted); }
+pre .out { color: var(--muted); }
+
+/* A command block with a labelled title bar: where to run it, as whom. */
+figure.cmd { margin: 22px 0; }
+figure.cmd figcaption {
+  font: 600 11.5px/1.4 var(--sans);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+  background: var(--shade);
+  border: 1px solid var(--rule);
+  border-bottom: none;
+  border-radius: 10px 10px 0 0;
+  padding: 7px 16px;
+}
+figure.cmd pre { margin: 0; border-radius: 0 0 10px 10px; }
+
+/* ---- asides / panels ---- */
+.plain {
+  background: var(--accent-soft);
+  border-left: 3px solid var(--accent);
+  border-radius: 0 10px 10px 0;
+  padding: 14px 18px 4px;
+  margin: 24px 0;
+}
+.plain .label, .warn .label, .why .label {
+  display: block;
+  font: 700 11.5px/1 var(--sans);
+  letter-spacing: 0.11em;
+  text-transform: uppercase;
+  margin: 0 0 9px;
+}
+.plain .label { color: var(--accent-ink); }
+.plain p { margin-bottom: 12px; }
+.warn {
+  background: var(--signal-soft);
+  border-left: 3px solid var(--signal);
+  border-radius: 0 10px 10px 0;
+  padding: 14px 18px 4px;
+  margin: 24px 0;
+}
+.warn .label { color: var(--signal); }
+.warn p { margin-bottom: 12px; }
+.why {
+  background: var(--good-soft);
+  border-left: 3px solid var(--good);
+  border-radius: 0 10px 10px 0;
+  padding: 14px 18px 4px;
+  margin: 24px 0;
+}
+.why .label { color: var(--good); }
+.why p { margin-bottom: 12px; }
+
+/* ---- step-by-step procedures ---- */
+ol.procedure { list-style: none; padding: 0; margin: 26px 0; counter-reset: step; }
+ol.procedure > li {
+  counter-increment: step;
+  position: relative;
+  padding: 0 0 26px 58px;
+  margin: 0;
+}
+ol.procedure > li::before {
+  content: counter(step);
+  position: absolute;
+  left: 0;
+  top: 1px;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: var(--accent-soft);
+  color: var(--accent-ink);
+  font: 700 15px/34px var(--sans);
+  text-align: center;
+}
+ol.procedure > li::after {
+  content: "";
+  position: absolute;
+  left: 16.5px;
+  top: 42px;
+  bottom: 6px;
+  width: 1px;
+  background: var(--rule);
+}
+ol.procedure > li:last-child::after { display: none; }
+ol.procedure > li > .step-title {
+  font: 650 16px/1.4 var(--sans);
+  margin: 5px 0 8px;
+}
+ol.procedure pre { margin: 12px 0; }
+ol.procedure figure.cmd { margin: 12px 0; }
+
+/* ---- tables ---- */
+.tablewrap { overflow-x: auto; margin: 20px 0; }
+table {
+  border-collapse: collapse;
+  width: 100%;
+  font: 14px/1.55 var(--sans);
+}
+th {
+  text-align: left;
+  font: 650 12px/1.4 var(--sans);
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: var(--muted);
+  border-bottom: 2px solid var(--rule);
+  padding: 8px 14px 8px 0;
+  white-space: nowrap;
+}
+td {
+  border-bottom: 1px solid var(--rule);
+  padding: 9px 14px 9px 0;
+  vertical-align: top;
+}
+td code, th code { white-space: nowrap; }
+td:last-child, th:last-child { padding-right: 0; }
+
+/* ---- the system map (the "you are here" diagram) ---- */
+.sysmap {
+  margin: 30px 0 8px;
+  border: 1px solid var(--rule);
+  border-radius: 12px;
+  background: var(--card);
+  padding: 14px 10px 6px;
+}
+.sysmap svg { display: block; width: 100%; height: auto; }
+.sysmap-caption {
+  font: 13px/1.6 var(--sans);
+  color: var(--muted);
+  margin: 8px 0 26px;
+}
+.sysmap text { font-family: var(--sans); fill: var(--ink); }
+.sysmap .boxlabel { font-size: 11.5px; font-weight: 600; }
+.sysmap .sublabel { font-size: 9.5px; fill: var(--muted); }
+.sysmap .zonelabel { font-size: 9.5px; font-weight: 700; letter-spacing: 0.09em; fill: var(--muted); }
+.sysmap rect.node { fill: var(--diagram-box); stroke: var(--rule); stroke-width: 1; rx: 7; }
+.sysmap rect.zone { fill: none; stroke: var(--rule); stroke-width: 1; stroke-dasharray: 4 4; rx: 10; }
+.sysmap line.wire, .sysmap path.wire { stroke: var(--muted); stroke-width: 1.2; fill: none; }
+.sysmap .here rect.node { fill: var(--accent-soft); stroke: var(--accent); stroke-width: 1.6; }
+.sysmap .here text.boxlabel { fill: var(--accent-ink); }
+
+/* generic figure/diagram captions */
+.caption { font: 13px/1.6 var(--sans); color: var(--muted); margin: 10px 0 24px; }
+figure { margin: 26px 0; }
+figure.diagram {
+  border: 1px solid var(--rule);
+  border-radius: 12px;
+  background: var(--card);
+  padding: 16px 12px 8px;
+}
+figure.diagram svg { display: block; width: 100%; height: auto; }
+figure.diagram text { font-family: var(--sans); fill: var(--ink); }
+figure.diagram figcaption { font: 13px/1.6 var(--sans); color: var(--muted); padding: 8px 8px 6px; }
+
+/* ---- definition lists (for flags, env vars) ---- */
+dl { margin: 0 0 20px; }
+dt { font: 600 14.5px/1.5 var(--sans); margin: 18px 0 4px; }
+dt code { font-size: 13.5px; }
+dd { margin: 0 0 10px 0; padding-left: 18px; border-left: 2px solid var(--rule); }
+
+/* ---- build-status badges: what is real and what is aspirational ---- */
+.status {
+  display: inline-block;
+  font: 700 10.5px/1 var(--sans);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  padding: 4px 9px 3px;
+  border-radius: 999px;
+  vertical-align: 2px;
+  white-space: nowrap;
+}
+.status.built { background: var(--good-soft); color: var(--good); border: 1px solid color-mix(in srgb, var(--good) 40%, transparent); }
+.status.partial { background: var(--signal-soft); color: var(--signal); border: 1px solid color-mix(in srgb, var(--signal) 40%, transparent); }
+.status.planned { background: var(--shade); color: var(--muted); border: 1px dashed color-mix(in srgb, var(--muted) 55%, transparent); }
+
+/* A framed panel for describing designed-but-unbuilt behaviour, so aspirational
+   material never reads as something an operator could run today. */
+.roadmap {
+  border: 1px dashed color-mix(in srgb, var(--muted) 55%, transparent);
+  border-radius: 12px;
+  background: var(--shade);
+  padding: 16px 20px 6px;
+  margin: 24px 0;
+}
+.roadmap .label {
+  display: block;
+  font: 700 11.5px/1 var(--sans);
+  letter-spacing: 0.11em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin: 0 0 9px;
+}
+.roadmap p { margin-bottom: 12px; }
+
+/* ---- prev / next footer ---- */
+footer.pager {
+  display: flex;
+  gap: 14px;
+  justify-content: space-between;
+  margin: 70px 0 0;
+  padding-top: 26px;
+  border-top: 1px solid var(--rule);
+  font-family: var(--sans);
+}
+footer.pager a {
+  flex: 1;
+  max-width: 48%;
+  border: 1px solid var(--rule);
+  border-radius: 10px;
+  padding: 12px 16px;
+  text-decoration: none;
+  color: var(--ink);
+  background: var(--card);
+}
+footer.pager a:hover { border-color: var(--accent); }
+footer.pager .dir {
+  display: block;
+  font: 600 11px/1 var(--sans);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-bottom: 6px;
+}
+footer.pager .dest { font: 600 14px/1.4 var(--sans); color: var(--accent-ink); }
+footer.pager a.next { text-align: right; margin-left: auto; }
+footer.colophon {
+  font: 12.5px/1.7 var(--sans);
+  color: var(--muted);
+  margin-top: 30px;
+}
+footer.colophon a { color: var(--muted); }
